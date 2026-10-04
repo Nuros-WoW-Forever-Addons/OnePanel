@@ -29,6 +29,17 @@ local function CreateMasterFrame()
     frame:SetFrameStrata("HIGH")
     frame:SetToplevel(true)
     frame:SetClampedToScreen(true)
+    frame:SetMovable(true)
+    frame:EnableMouse(true)
+    frame:RegisterForDrag("LeftButton")
+    frame:SetScript("OnDragStart", function(self)
+        if not InCombatLockdown or not InCombatLockdown() then
+            self:StartMoving()
+        end
+    end)
+    frame:SetScript("OnDragStop", function(self)
+        self:StopMovingOrSizing()
+    end)
     frame:Hide()
     
     -- Apply standard Blizzard backdrop & title bar via FrameHelper
