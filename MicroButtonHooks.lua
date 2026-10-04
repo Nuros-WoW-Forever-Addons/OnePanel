@@ -1,6 +1,6 @@
 --[[
     OnePanel - MicroButtonHooks.lua
-    Micro-button & keybind toggle intercepts for seamless native UI redirection.
+    Secure, taint-free hooks for native WoW toggle routines using hooksecurefunc.
 --]]
 
 local addonName, addonTable = ...
@@ -19,20 +19,19 @@ local ToggleMapping = {
 }
 
 -------------------------------------------------------------------------------
--- Toggle Intercept Engine
+-- Secure Hook Engine (Zero Taint)
 -------------------------------------------------------------------------------
 
---- Install hooks on native Blizzard toggle routines
+--- Install taint-free secure hooks on native Blizzard toggle routines
 function MicroButtonHooks:Initialize()
     for globalFuncName, pluginId in pairs(ToggleMapping) do
-        local origFunc = _G[globalFuncName]
-        if type(origFunc) == "function" then
-            _G[globalFuncName] = function(...)
+        if type(_G[globalFuncName]) == "function" then
+            hooksecurefunc(globalFuncName, function(...)
                 local plugin = OnePanel.plugins and OnePanel.plugins[pluginId]
                 local globalEnable = (OnePanelDB and OnePanelDB.interceptNativeKeys)
                 local pluginEnable = (plugin and plugin.interceptNativeToggle)
                 
-                -- Only redirect if explicitly enabled globally or requested by active plugin
+                -- Only react if explicitly requested by active plugin or global setting
                 if plugin and (globalEnable or pluginEnable) then
                     if OnePanel.frame and OnePanel.frame:IsShown() and OnePanel.activePluginId == pluginId then
                         OnePanel:Hide()
@@ -42,14 +41,11 @@ function MicroButtonHooks:Initialize()
                             OnePanel.TabManager:SelectTab(pluginId)
                         end
                     end
-                else
-                    -- Fallback to native Blizzard UI execution
-                    return origFunc(...)
                 end
-            end
+            end)
             
             if Utils and Utils.Logger then
-                Utils.Logger:Log("MicroButtonHooks", "DEBUG", "Hooked native toggle routine: " .. globalFuncName .. " -> " .. pluginId)
+                Utils.Logger:Log("MicroButtonHooks", "DEBUG", "Securely hooked toggle routine: " .. globalFuncName .. " -> " .. pluginId)
             end
         end
     end
