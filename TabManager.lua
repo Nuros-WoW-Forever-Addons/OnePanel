@@ -1,6 +1,6 @@
 --[[
     OnePanel - TabManager.lua
-    Dynamic master tab controller, view container swapper, and fallback tab button rendering.
+    Right-side vertical tab controller, icon tab styling, and view container swapper.
 --]]
 
 local addonName, addonTable = ...
@@ -13,117 +13,67 @@ TabManager.tabButtons = {}
 local Utils = _G.OnePanelUtils
 
 -------------------------------------------------------------------------------
--- Fallback Custom Tab Construction
+-- Right-Side Vertical Tab Button Construction
 -------------------------------------------------------------------------------
 
---- Programmatically build a tab button if native XML template is missing
--- @param button Button: The target button frame
-local function BuildCustomTabTextures(button)
-    if button.isCustomTabBuilt then return end
-    button.isCustomTabBuilt = true
-    
-    -- Inactive Background Textures
-    local left = button:CreateTexture(button:GetName() .. "Left", "BACKGROUND")
-    left:SetTexture("Interface\\PaperDollInfoFrame\\UI-Character-InActiveTab")
-    left:SetSize(20, 32)
-    left:SetPoint("TOPLEFT", button, "TOPLEFT", 0, -1)
-    left:SetTexCoord(0, 0.15625, 0, 1.0)
-    button.Left = left
-    
-    local right = button:CreateTexture(button:GetName() .. "Right", "BACKGROUND")
-    right:SetTexture("Interface\\PaperDollInfoFrame\\UI-Character-InActiveTab")
-    right:SetSize(20, 32)
-    right:SetPoint("TOPRIGHT", button, "TOPRIGHT", 0, -1)
-    right:SetTexCoord(0.84375, 1.0, 0, 1.0)
-    button.Right = right
-    
-    local middle = button:CreateTexture(button:GetName() .. "Middle", "BACKGROUND")
-    middle:SetTexture("Interface\\PaperDollInfoFrame\\UI-Character-InActiveTab")
-    middle:SetHeight(32)
-    middle:SetPoint("LEFT", left, "RIGHT", 0, 0)
-    middle:SetPoint("RIGHT", right, "LEFT", 0, 0)
-    middle:SetTexCoord(0.15625, 0.84375, 0, 1.0)
-    middle:SetTexCoord(0.15625, 0.84375, 0, 1.0)
-    button.Middle = middle
-    
-    -- Active / Disabled Textures
-    local leftDisabled = button:CreateTexture(button:GetName() .. "LeftDisabled", "BACKGROUND")
-    leftDisabled:SetTexture("Interface\\PaperDollInfoFrame\\UI-Character-ActiveTab")
-    leftDisabled:SetSize(20, 35)
-    leftDisabled:SetPoint("TOPLEFT", button, "TOPLEFT", 0, 0)
-    leftDisabled:SetTexCoord(0, 0.15625, 0, 0.546875)
-    leftDisabled:Hide()
-    button.LeftDisabled = leftDisabled
-    
-    local rightDisabled = button:CreateTexture(button:GetName() .. "RightDisabled", "BACKGROUND")
-    rightDisabled:SetTexture("Interface\\PaperDollInfoFrame\\UI-Character-ActiveTab")
-    rightDisabled:SetSize(20, 35)
-    rightDisabled:SetPoint("TOPRIGHT", button, "TOPRIGHT", 0, 0)
-    rightDisabled:SetTexCoord(0.84375, 1.0, 0, 0.546875)
-    rightDisabled:Hide()
-    button.RightDisabled = rightDisabled
-    
-    local middleDisabled = button:CreateTexture(button:GetName() .. "MiddleDisabled", "BACKGROUND")
-    middleDisabled:SetTexture("Interface\\PaperDollInfoFrame\\UI-Character-ActiveTab")
-    middleDisabled:SetHeight(35)
-    middleDisabled:SetPoint("LEFT", leftDisabled, "RIGHT", 0, 0)
-    middleDisabled:SetPoint("RIGHT", rightDisabled, "LEFT", 0, 0)
-    middleDisabled:SetTexCoord(0.15625, 0.84375, 0, 0.546875)
-    middleDisabled:Hide()
-    button.MiddleDisabled = middleDisabled
-    
-    -- Text Label
-    local text = button:CreateFontString(button:GetName() .. "Text", "OVERLAY", "GameFontNormalSmall")
-    text:SetPoint("CENTER", button, "CENTER", 0, 2)
-    button.Text = text
-    button:SetFontString(text)
-    
-    -- Highlight Texture
-    local highlight = button:CreateTexture(button:GetName() .. "HighlightTexture", "HIGHLIGHT")
-    highlight:SetTexture("Interface\\PaperDollInfoFrame\\UI-Character-Tab-RealHighlight")
-    highlight:SetBlendMode("ADD")
-    highlight:SetPoint("TOPLEFT", button, "TOPLEFT", 3, 5)
-    highlight:SetPoint("BOTTOMRIGHT", button, "BOTTOMRIGHT", -3, 0)
-    button.HighlightTexture = highlight
-end
-
--------------------------------------------------------------------------------
--- Dynamic Tab Rail Rendering & Positioning
--------------------------------------------------------------------------------
-
---- Create a styled master tab button with template fallback safety
+--- Programmatically build a vertical right-side tab button
 -- @param index number: Tab index position
--- @param pluginId string: Plugin ID
--- @return Button: Tab button frame
-local function CreateTabButton(index, pluginId)
+-- @param pluginId string: Unique plugin identifier
+-- @return Button: Created side tab button
+local function CreateSideTabButton(index, pluginId)
     local parentFrame = OnePanel.frame
-    local buttonName = "OnePanelMasterTab" .. index
+    local buttonName = "OnePanelSideTab" .. index
     
-    local tab = nil
-    -- Try native templates first
-    local templatesToTry = {
-        "CharacterFrameTabButtonTemplate",
-        "PanelTabButtonTemplate",
-        "TabButtonTemplate"
-    }
-    
-    for _, templateName in ipairs(templatesToTry) do
-        local ok, btn = pcall(CreateFrame, "Button", buttonName, parentFrame, templateName)
-        if ok and btn then
-            tab = btn
-            break
-        end
-    end
-    
-    -- Fallback: Create un-templated button and programmatically construct graphics
-    if not tab then
-        tab = CreateFrame("Button", buttonName, parentFrame)
-        BuildCustomTabTextures(tab)
-    end
-    
+    local tab = CreateFrame("Button", buttonName, parentFrame)
+    tab:SetSize(36, 36)
     tab:SetID(index)
-    tab:SetHeight(32)
     tab.pluginId = pluginId
+    
+    -- Outer Border Texture (SpellBook-SkillLineTab style)
+    local border = tab:CreateTexture(buttonName .. "Border", "BACKGROUND")
+    border:SetTexture("Interface\\SpellBook\\SpellBook-SkillLineTab")
+    border:SetSize(64, 64)
+    border:SetPoint("TOPLEFT", tab, "TOPLEFT", -3, 11)
+    tab.Border = border
+    
+    -- Main Icon Texture
+    local icon = tab:CreateTexture(buttonName .. "Icon", "ARTWORK")
+    icon:SetSize(30, 30)
+    icon:SetPoint("CENTER", tab, "CENTER", 0, 0)
+    icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+    tab.Icon = icon
+    
+    -- Highlight Texture (Square hover glow)
+    local highlight = tab:CreateTexture(buttonName .. "Highlight", "HIGHLIGHT")
+    highlight:SetTexture("Interface\\Buttons\\ButtonHilight-Square")
+    highlight:SetBlendMode("ADD")
+    highlight:SetAllPoints(icon)
+    tab.Highlight = highlight
+    
+    -- Active / Checked Glow Texture
+    local activeGlow = tab:CreateTexture(buttonName .. "ActiveGlow", "OVERLAY")
+    activeGlow:SetTexture("Interface\\Buttons\\CheckButtonHilight")
+    activeGlow:SetBlendMode("ADD")
+    activeGlow:SetAllPoints(icon)
+    activeGlow:Hide()
+    tab.ActiveGlow = activeGlow
+    
+    -- Tooltip Handlers
+    tab:SetScript("OnEnter", function(self)
+        local plugin = OnePanel.plugins[self.pluginId]
+        if plugin then
+            GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+            GameTooltip:SetText(plugin.title or self.pluginId, 1, 1, 1)
+            if plugin.tooltipDesc then
+                GameTooltip:AddLine(plugin.tooltipDesc, 0.8, 0.8, 0.8, true)
+            end
+            GameTooltip:Show()
+        end
+    end)
+    
+    tab:SetScript("OnLeave", function()
+        GameTooltip_Hide()
+    end)
     
     tab:SetScript("OnClick", function(self)
         TabManager:SelectTab(self.pluginId)
@@ -214,7 +164,11 @@ function TabManager:SelectTab(pluginId)
     return true
 end
 
---- Refresh and align all master tab buttons along the frame bottom rail
+-------------------------------------------------------------------------------
+-- Dynamic Right-Side Tab Positioning & Highlight Management
+-------------------------------------------------------------------------------
+
+--- Refresh and align all side tab buttons vertically along the right edge
 function TabManager:RefreshTabs()
     local frame = OnePanel.frame
     if not frame then return end
@@ -227,31 +181,22 @@ function TabManager:RefreshTabs()
         if plugin then
             local btn = self.tabButtons[i]
             if not btn then
-                btn = CreateTabButton(i, pluginId)
+                btn = CreateSideTabButton(i, pluginId)
                 self.tabButtons[i] = btn
             end
             
             btn.pluginId = pluginId
-            local text = plugin.title or pluginId
-            btn:SetText(text)
+            if plugin.icon then
+                btn.Icon:SetTexture(plugin.icon)
+            end
             btn:Show()
             
-            -- Calculate button width based on text
-            local textFontString = btn.Text or _G[btn:GetName() .. "Text"]
-            local textWidth = textFontString and textFontString:GetStringWidth() or 60
-            local btnWidth = math.max(80, textWidth + 30)
-            btn:SetWidth(btnWidth)
-            
-            -- Position tabs horizontally along bottom rail
+            -- Position side tabs vertically stacked along the right frame edge
             btn:ClearAllPoints()
             if i == 1 then
-                btn:SetPoint("TOPLEFT", frame, "BOTTOMLEFT", 19, 11)
+                btn:SetPoint("TOPLEFT", frame, "TOPRIGHT", -2, -36)
             else
-                btn:SetPoint("LEFT", self.tabButtons[i - 1], "RIGHT", -5, 0)
-            end
-            
-            if PanelTemplates_TabResize then
-                pcall(PanelTemplates_TabResize, btn, 0)
+                btn:SetPoint("TOPLEFT", self.tabButtons[i - 1], "BOTTOMLEFT", 0, -12)
             end
         end
     end
@@ -266,38 +211,31 @@ function TabManager:RefreshTabs()
     self:UpdateTabHighlights()
 end
 
---- Update active vs inactive visual highlights on tab buttons
+--- Update active vs inactive visual highlights on right-side tabs
 function TabManager:UpdateTabHighlights()
     local activeId = OnePanel.activePluginId
+    local frame = OnePanel.frame
+    
     for i, btn in ipairs(self.tabButtons) do
         if btn and btn:IsShown() then
             local isSelected = (btn.pluginId == activeId)
             
-            if PanelTemplates_SelectTab and PanelTemplates_DeselectTab then
-                if isSelected then
-                    pcall(PanelTemplates_SelectTab, btn)
-                else
-                    pcall(PanelTemplates_DeselectTab, btn)
-                end
+            -- Re-calculate horizontal offset: active tab shifts slightly right to pop out
+            btn:ClearAllPoints()
+            local xOffset = isSelected and 2 or -2
+            
+            if i == 1 then
+                btn:SetPoint("TOPLEFT", frame, "TOPRIGHT", xOffset, -36)
             else
-                -- Fallback custom tab highlighting
-                if isSelected then
-                    if btn.LeftDisabled then btn.LeftDisabled:Show() end
-                    if btn.MiddleDisabled then btn.MiddleDisabled:Show() end
-                    if btn.RightDisabled then btn.RightDisabled:Show() end
-                    if btn.Left then btn.Left:Hide() end
-                    if btn.Middle then btn.Middle:Hide() end
-                    if btn.Right then btn.Right:Hide() end
-                    if btn.Text then btn.Text:SetTextColor(1, 0.82, 0) end
-                else
-                    if btn.LeftDisabled then btn.LeftDisabled:Hide() end
-                    if btn.MiddleDisabled then btn.MiddleDisabled:Hide() end
-                    if btn.RightDisabled then btn.RightDisabled:Hide() end
-                    if btn.Left then btn.Left:Show() end
-                    if btn.Middle then btn.Middle:Show() end
-                    if btn.Right then btn.Right:Show() end
-                    if btn.Text then btn.Text:SetTextColor(0.5, 0.5, 0.5) end
-                end
+                btn:SetPoint("TOPLEFT", self.tabButtons[i - 1], "BOTTOMLEFT", (isSelected and 4 or 0), -12)
+            end
+            
+            if isSelected then
+                btn.Icon:SetVertexColor(1.0, 1.0, 1.0, 1.0)
+                if btn.ActiveGlow then btn.ActiveGlow:Show() end
+            else
+                btn.Icon:SetVertexColor(0.7, 0.7, 0.7, 1.0)
+                if btn.ActiveGlow then btn.ActiveGlow:Hide() end
             end
         end
     end
