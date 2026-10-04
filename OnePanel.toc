@@ -1,0 +1,11 @@
+## Interface: 16001
+## Title: OnePanel
+## Notes: Unified interface host shell and master tab coordinator for World of Warcraft.
+## Author: OnePanel Suite Team
+## Version: 0.0.1
+## Dependencies: OnePanelUtils
+## SavedVariables: OnePanelDB
+
+OnePanel.lua
+TabManager.lua
+MicroButtonHooks.lua
