@@ -28,8 +28,12 @@ function MicroButtonHooks:Initialize()
         local origFunc = _G[globalFuncName]
         if type(origFunc) == "function" then
             _G[globalFuncName] = function(...)
-                -- Check if plugin is registered with OnePanel
-                if OnePanel.plugins and OnePanel.plugins[pluginId] then
+                local plugin = OnePanel.plugins and OnePanel.plugins[pluginId]
+                local globalEnable = (OnePanelDB and OnePanelDB.interceptNativeKeys)
+                local pluginEnable = (plugin and plugin.interceptNativeToggle)
+                
+                -- Only redirect if explicitly enabled globally or requested by active plugin
+                if plugin and (globalEnable or pluginEnable) then
                     if OnePanel.frame and OnePanel.frame:IsShown() and OnePanel.activePluginId == pluginId then
                         OnePanel:Hide()
                     else
