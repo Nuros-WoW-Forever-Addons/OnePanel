@@ -1,7 +1,8 @@
 --[[
     OnePanel - OnePanel.lua
-    Master host frame shell, centered character title, top-left scaled circular portrait,
-    subdued background art, and collapsible side panel window sizing.
+    Master host frame shell utilizing Blizzard's native PortraitFrameTemplate
+    for 1:1 visual parity with native frames, centered title, top-left portrait ring,
+    and collapsible side panel window sizing.
 --]]
 
 local addonName, addonTable = ...
@@ -24,9 +25,15 @@ local Utils = _G.OnePanelUtils
 --- Dynamically set the main window title header (centered First & Last name)
 -- @param titleText string: Optional custom title override
 function OnePanel:SetTitleText(titleText)
-    if self.frame and self.frame.Title then
-        local name = UnitName("player") or "Player"
-        local displayTitle = titleText or name
+    if not self.frame then return end
+    local name = UnitName("player") or "Player"
+    local displayTitle = titleText or name
+    
+    if self.frame.SetTitle then
+        self.frame:SetTitle(displayTitle)
+    elseif self.frame.TitleContainer and self.frame.TitleContainer.TitleText then
+        self.frame.TitleContainer.TitleText:SetText(displayTitle)
+    elseif self.frame.Title then
         self.frame.Title:SetText("|cffffffff" .. displayTitle .. "|r")
     end
 end
@@ -50,20 +57,32 @@ end
 -- @param texCoords table|nil: Optional {left, right, top, bottom} coords
 -- @param usePlayerPortrait boolean|nil: If true, calls SetPortraitTexture for player
 function OnePanel:SetHeaderPortrait(texturePath, texCoords, usePlayerPortrait)
-    if not self.frame or not self.frame.PortraitIcon then return end
+    if not self.frame then return end
+    
+    local portraitTex = (self.frame.PortraitContainer and self.frame.PortraitContainer.portrait)
+        or self.frame.portrait
+        or self.frame.PortraitIcon
+        
+    if not portraitTex then return end
+    
+    portraitTex:Show()
     
     if usePlayerPortrait then
-        SetPortraitTexture(self.frame.PortraitIcon, "player")
+        SetPortraitTexture(portraitTex, "player")
+        portraitTex:SetTexCoord(0, 1, 0, 1)
     elseif texturePath then
-        self.frame.PortraitIcon:SetTexture(texturePath)
+        portraitTex:SetTexture(texturePath)
         if texCoords and type(texCoords) == "table" and #texCoords == 4 then
-            self.frame.PortraitIcon:SetTexCoord(unpack(texCoords))
+            portraitTex:SetTexCoord(unpack(texCoords))
         else
-            self.frame.PortraitIcon:SetTexCoord(0, 1, 0, 1)
+            portraitTex:SetTexCoord(0, 1, 0, 1)
         end
     else
         if Utils and Utils.FrameHelper then
-            Utils.FrameHelper:SetClassIcon(self.frame.PortraitIcon)
+            Utils.FrameHelper:SetClassIcon(portraitTex)
+        else
+            SetPortraitTexture(portraitTex, "player")
+            portraitTex:SetTexCoord(0, 1, 0, 1)
         end
     end
 end
@@ -75,8 +94,8 @@ end
 local function CreateMasterFrame()
     if OnePanel.frame then return OnePanel.frame end
     
-    -- Main Window Container
-    local frame = CreateFrame("Frame", "OnePanelFrame", UIParent)
+    -- Main Window Container using native Blizzard PortraitFrameTemplate
+    local frame = CreateFrame("Frame", "OnePanelFrame", UIParent, "PortraitFrameTemplate")
     frame:SetSize(832, 580)
     frame:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
     frame:SetFrameStrata("HIGH")
@@ -95,52 +114,22 @@ local function CreateMasterFrame()
     end)
     frame:Hide()
     
-    -- Apply standard Blizzard backdrop & title bar via FrameHelper
+    -- Register Esc key close
     if Utils and Utils.FrameHelper then
-        Utils.FrameHelper:ApplyBackdrop(frame,
-            "Interface\\DialogFrame\\UI-DialogBox-Background",
-            "Interface\\DialogFrame\\UI-DialogBox-Border",
-            32, 32, { left = 11, right = 12, top = 12, bottom = 11 }
-        )
         Utils.FrameHelper:RegisterEscClose("OnePanelFrame")
     end
     
-    -- Centered Title Header FontString (First & Last Name)
-    local headerText = frame:CreateFontString(nil, "OVERLAY", "GameFontNormalMed3")
-    headerText:SetPoint("TOP", frame, "TOP", 0, -12)
-    headerText:SetText("|cffffffff" .. (UnitName("player") or "Player") .. "|r")
-    frame.Title = headerText
+    -- Store frame reference
+    OnePanel.frame = frame
     
-    -- Top-Left Circular Portrait Ring & Icon (Master Host Base Shell Feature)
-    local portraitRing = frame:CreateTexture("OnePanelFramePortraitRing", "OVERLAY")
-    portraitRing:SetSize(96, 96)
-    portraitRing:SetPoint("CENTER", frame, "TOPLEFT", 0, 0)
-    portraitRing:SetTexture("Interface\\Minimap\\MiniMap-TrackingBorder")
-    portraitRing:SetDesaturated(true)
-    portraitRing:SetVertexColor(0.85, 0.85, 0.85)
-    frame.PortraitRing = portraitRing
-    
-    local portraitIcon = frame:CreateTexture("OnePanelFramePortraitIcon", "ARTWORK")
-    portraitIcon:SetSize(60, 60)
-    portraitIcon:SetPoint("CENTER", portraitRing, "CENTER", 0, 0)
-    if Utils and Utils.FrameHelper then
-        Utils.FrameHelper:SetClassIcon(portraitIcon)
-    end
-    portraitIcon:Hide() -- Temporarily hidden for Ring-only Nudger alignment
-    frame.PortraitIcon = portraitIcon
-    
-    -- Close Button
-    local closeBtn = CreateFrame("Button", "OnePanelFrameCloseButton", frame, "UIPanelCloseButton")
-    closeBtn:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -8, -8)
-    closeBtn:SetScript("OnClick", function()
-        OnePanel:Hide()
-    end)
-    frame.CloseButton = closeBtn
+    -- Set Initial Title & Portrait
+    OnePanel:SetTitleText()
+    OnePanel:SetHeaderPortrait()
     
     -- Inner Content Display Area (Container for Plugin Views)
     local contentArea = CreateFrame("Frame", "OnePanelContentArea", frame)
-    contentArea:SetPoint("TOPLEFT", frame, "TOPLEFT", 18, -45)
-    contentArea:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -18, 18)
+    contentArea:SetPoint("TOPLEFT", frame, "TOPLEFT", 12, -32)
+    contentArea:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -12, 12)
     
     if Utils and Utils.FrameHelper then
         Utils.FrameHelper:ApplyBackdrop(contentArea,
@@ -151,7 +140,6 @@ local function CreateMasterFrame()
     end
     frame.ContentArea = contentArea
     
-    OnePanel.frame = frame
     return frame
 end
 
@@ -230,185 +218,6 @@ function OnePanel:Toggle()
 end
 
 -------------------------------------------------------------------------------
--- 1px Precision Border Ring Nudger Tool
--------------------------------------------------------------------------------
-
---- Toggle or enable the in-game 1px Nudger tool for pixel-perfect border ring adjustments
--- @param enable boolean|nil: True to enable, False to disable, nil to toggle
-function OnePanel:EnableGUIBuilder(enable)
-    local frame = CreateMasterFrame()
-    if not frame then return end
-    
-    if enable == nil then
-        self.guiBuilderEnabled = not self.guiBuilderEnabled
-    else
-        self.guiBuilderEnabled = enable
-    end
-    
-    if not self.nudgerWindow then
-        local nudger = CreateFrame("Frame", "OnePanel_NudgerWindow", frame)
-        nudger:SetSize(340, 190)
-        nudger:SetPoint("BOTTOMLEFT", frame, "TOPLEFT", 0, 10)
-        nudger:SetFrameStrata("TOOLTIP")
-        nudger:EnableMouse(true)
-        nudger:SetMovable(true)
-        nudger:RegisterForDrag("LeftButton")
-        nudger:SetScript("OnDragStart", function(self) self:StartMoving() end)
-        nudger:SetScript("OnDragStop", function(self) self:StopMovingOrSizing() end)
-        
-        if Utils and Utils.FrameHelper then
-            Utils.FrameHelper:ApplyBackdrop(nudger,
-                "Interface\\DialogFrame\\UI-DialogBox-Background",
-                "Interface\\DialogFrame\\UI-DialogBox-Border",
-                16, 16, { left = 4, right = 4, top = 4, bottom = 4 }
-            )
-        end
-        
-        -- State variables
-        nudger.ringX = 0
-        nudger.ringY = 0
-        nudger.ringSize = 96
-        nudger.textureIdx = 1
-        
-        nudger.textures = {
-            { name = "Buttons\\IconBorder-GlowRing", path = "Interface\\Buttons\\IconBorder-GlowRing" },
-            { name = "Common\\IconBorder-GlowRing", path = "Interface\\Common\\IconBorder-GlowRing" },
-            { name = "Minimap\\UI-Minimap-Border", path = "Interface\\Minimap\\UI-Minimap-Border" },
-            { name = "TargetingFrame\\UI-TargetingFrame-PortraitFrame", path = "Interface\\TargetingFrame\\UI-TargetingFrame-PortraitFrame" },
-            { name = "Minimap\\MiniMap-TrackingBorder", path = "Interface\\Minimap\\MiniMap-TrackingBorder" },
-            { name = "FrameGeneral\\UI-Frame-Portrait", path = "Interface\\FrameGeneral\\UI-Frame-Portrait" },
-            { name = "PaperDollHeaderFooters\\UI-PaperDoll-Header", path = "Interface\\PaperDollHeaderFooters\\UI-PaperDoll-Header" },
-        }
-        
-        -- Display FontStrings
-        local title = nudger:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-        title:SetPoint("TOP", nudger, "TOP", 0, -8)
-        title:SetText("|cffffd100Border Ring 1px Nudger Tool|r")
-        
-        local infoText = nudger:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
-        infoText:SetPoint("TOPLEFT", nudger, "TOPLEFT", 12, -26)
-        infoText:SetPoint("TOPRIGHT", nudger, "TOPRIGHT", -12, -26)
-        infoText:SetJustifyH("CENTER")
-        nudger.InfoText = infoText
-        
-        local function UpdateLayout()
-            local texEntry = nudger.textures[nudger.textureIdx] or nudger.textures[1]
-            frame.PortraitRing:SetTexture(texEntry.path)
-            frame.PortraitRing:SetSize(nudger.ringSize, nudger.ringSize)
-            frame.PortraitRing:ClearAllPoints()
-            frame.PortraitRing:SetPoint("CENTER", frame, "TOPLEFT", nudger.ringX, nudger.ringY)
-            
-            local statusStr = string.format("Tex: |cff00ff00%s|r | Size: |cffffffff%d x %d|r | Pos: |cffffffffX=%d, Y=%d|r",
-                texEntry.name, nudger.ringSize, nudger.ringSize, nudger.ringX, nudger.ringY)
-            nudger.InfoText:SetText(statusStr)
-            
-            if Utils and Utils.Logger then
-                Utils.Logger:Log("RING_NUDGER", "INFO", statusStr)
-            end
-        end
-        nudger.UpdateLayout = UpdateLayout
-        
-        -- Helper to create Nudge buttons
-        local function CreateNudgeBtn(name, label, width, x, y, onClick)
-            local btn = CreateFrame("Button", name, nudger, "UIPanelButtonTemplate")
-            btn:SetSize(width, 22)
-            btn:SetPoint("TOPLEFT", nudger, "TOPLEFT", x, y)
-            btn:SetText(label)
-            btn:SetScript("OnClick", function()
-                onClick()
-                nudger:UpdateLayout()
-            end)
-            return btn
-        end
-        
-        -- Row 1: 1px Fine Position Nudgers
-        CreateNudgeBtn("OP_NudgeUp1", "▲ Up +1", 74, 12, -48, function() nudger.ringY = nudger.ringY + 1 end)
-        CreateNudgeBtn("OP_NudgeDown1", "▼ Down -1", 74, 90, -48, function() nudger.ringY = nudger.ringY - 1 end)
-        CreateNudgeBtn("OP_NudgeLeft1", "◄ Left -1", 74, 168, -48, function() nudger.ringX = nudger.ringX - 1 end)
-        CreateNudgeBtn("OP_NudgeRight1", "Right ► +1", 82, 246, -48, function() nudger.ringX = nudger.ringX + 1 end)
-        
-        -- Row 2: 5px Fast Position Nudgers
-        CreateNudgeBtn("OP_NudgeUp5", "▲ Up +5", 74, 12, -72, function() nudger.ringY = nudger.ringY + 5 end)
-        CreateNudgeBtn("OP_NudgeDown5", "▼ Down -5", 74, 90, -72, function() nudger.ringY = nudger.ringY - 5 end)
-        CreateNudgeBtn("OP_NudgeLeft5", "◄ Left -5", 74, 168, -72, function() nudger.ringX = nudger.ringX - 5 end)
-        CreateNudgeBtn("OP_NudgeRight5", "Right ► +5", 82, 246, -72, function() nudger.ringX = nudger.ringX + 5 end)
-        
-        -- Row 3: Ring Size Nudgers
-        CreateNudgeBtn("OP_RingSizePlus1", "Size +1", 74, 12, -96, function() nudger.ringSize = nudger.ringSize + 1 end)
-        CreateNudgeBtn("OP_RingSizeMinus1", "Size -1", 74, 90, -96, function() nudger.ringSize = math.max(10, nudger.ringSize - 1) end)
-        CreateNudgeBtn("OP_RingSizePlus5", "Size +5", 74, 168, -96, function() nudger.ringSize = nudger.ringSize + 5 end)
-        CreateNudgeBtn("OP_RingSizeMinus5", "Size -5", 82, 246, -96, function() nudger.ringSize = math.max(10, nudger.ringSize - 5) end)
-        
-        -- Row 4: Texture Dropdown Picker
-        local dropDown = CreateFrame("Frame", "OnePanel_TextureDropDown", nudger, "UIDropDownMenuTemplate")
-        dropDown:SetPoint("TOPLEFT", nudger, "TOPLEFT", -4, -120)
-        UIDropDownMenu_SetWidth(dropDown, 280)
-        
-        local function DropDown_OnClick(self)
-            UIDropDownMenu_SetSelectedID(dropDown, self:GetID())
-            nudger.textureIdx = self:GetID()
-            nudger:UpdateLayout()
-        end
-        
-        local function DropDown_Initialize(self, level)
-            for idx, item in ipairs(nudger.textures) do
-                local info = UIDropDownMenu_CreateInfo()
-                info.text = item.name
-                info.value = item.path
-                info.func = DropDown_OnClick
-                info.checked = (idx == nudger.textureIdx)
-                UIDropDownMenu_AddButton(info, level)
-            end
-        end
-        
-        UIDropDownMenu_Initialize(dropDown, DropDown_Initialize)
-        UIDropDownMenu_SetSelectedID(dropDown, 1)
-        nudger.DropDown = dropDown
-        
-        -- Row 5: Log / Print Final Ring Coordinates Button
-        local printBtn = CreateFrame("Button", "OP_PrintRingCoordsBtn", nudger, "UIPanelButtonTemplate")
-        printBtn:SetSize(316, 22)
-        printBtn:SetPoint("TOPLEFT", nudger, "TOPLEFT", 12, -154)
-        printBtn:SetText("Log / Print Final Ring Coordinates to Chat & Swatter")
-        printBtn:SetScript("OnClick", function()
-            local texEntry = nudger.textures[nudger.textureIdx] or nudger.textures[1]
-            local code1 = string.format("portraitRing:SetTexture('%s')", texEntry.path)
-            local code2 = string.format("portraitRing:SetSize(%d, %d)", nudger.ringSize, nudger.ringSize)
-            local code3 = string.format("portraitRing:SetPoint('CENTER', frame, 'TOPLEFT', %d, %d)", nudger.ringX, nudger.ringY)
-            
-            if DEFAULT_CHAT_FRAME then
-                DEFAULT_CHAT_FRAME:AddMessage("|cffffd100[OnePanel Final Ring Coordinates]|r")
-                DEFAULT_CHAT_FRAME:AddMessage("|cffffffff" .. code1 .. "|r")
-                DEFAULT_CHAT_FRAME:AddMessage("|cffffffff" .. code2 .. "|r")
-                DEFAULT_CHAT_FRAME:AddMessage("|cffffffff" .. code3 .. "|r")
-            end
-            if Utils and Utils.Logger then
-                Utils.Logger:Log("RING_NUDGER_SAVE", "INFO", code1 .. " | " .. code2 .. " | " .. code3)
-            end
-        end)
-        
-        self.nudgerWindow = nudger
-    end
-    
-    if self.guiBuilderEnabled then
-        frame:Show()
-        self.nudgerWindow:Show()
-        self.nudgerWindow:UpdateLayout()
-        if DEFAULT_CHAT_FRAME then
-            DEFAULT_CHAT_FRAME:AddMessage("|cff00ff00[Border Ring Nudger ENABLED]|r Adjust border ring position and size by 1px steps.")
-            DEFAULT_CHAT_FRAME:AddMessage("|cffffffffType /opgui or /onepanelgui to toggle off.|r")
-        end
-    else
-        if self.nudgerWindow then
-            self.nudgerWindow:Hide()
-        end
-        if DEFAULT_CHAT_FRAME then
-            DEFAULT_CHAT_FRAME:AddMessage("|cffff0000[Border Ring Nudger DISABLED]|r")
-        end
-    end
-end
-
--------------------------------------------------------------------------------
 -- Event Handling & Slash Commands
 -------------------------------------------------------------------------------
 
@@ -436,11 +245,4 @@ SLASH_ONEPANEL1 = "/onepanel"
 SLASH_ONEPANEL2 = "/op"
 SlashCmdList["ONEPANEL"] = function(msg)
     OnePanel:Toggle()
-end
-
--- GUI Builder Command: /opgui or /onepanelgui
-SLASH_ONEPANELGUI1 = "/opgui"
-SLASH_ONEPANELGUI2 = "/onepanelgui"
-SlashCmdList["ONEPANELGUI"] = function(msg)
-    OnePanel:EnableGUIBuilder()
 end
