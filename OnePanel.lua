@@ -143,50 +143,6 @@ local function CreateMasterFrame()
         )
     end
     frame.ContentArea = contentArea
-    -- Native Right-Side Collapse / Expand Toggle Button (Matches CharacterFrameRightPaneToggleButton)
-    local toggleBtn = CreateFrame("Button", "OnePanel_RightSideToggleButton", frame)
-    toggleBtn:SetSize(28, 28)
-    toggleBtn:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -6, -6)
-    toggleBtn:SetFrameLevel(510)
-    
-    local toggleIcon = toggleBtn:CreateTexture(nil, "ARTWORK")
-    toggleIcon:SetAllPoints(toggleBtn)
-    local setNorm = pcall(function() toggleIcon:SetTexture(130869) end)
-    if not setNorm or not toggleIcon:GetTexture() then
-        toggleIcon:SetTexture("Interface\\Buttons\\UI-SpellbookSearch-DrillDown")
-    end
-    toggleBtn.Icon = toggleIcon
-    
-    local toggleHilight = toggleBtn:CreateTexture(nil, "HIGHLIGHT")
-    local setHilight = pcall(function() toggleHilight:SetTexture(130757) end)
-    if not setHilight or not toggleHilight:GetTexture() then
-        toggleHilight:SetTexture("Interface\\Buttons\\UI-Common-MouseHilight")
-    end
-    toggleHilight:SetBlendMode("ADD")
-    toggleHilight:SetAllPoints(toggleBtn)
-    
-    local function UpdateToggleIcon()
-        if OnePanel.isExpanded then
-            toggleIcon:SetTexCoord(0, 1, 0, 1)
-        else
-            toggleIcon:SetTexCoord(1, 0, 0, 1)
-        end
-    end
-    toggleBtn.UpdateIcon = UpdateToggleIcon
-    UpdateToggleIcon()
-    
-    toggleBtn:SetScript("OnClick", function()
-        OnePanel:SetPanelExpanded(not OnePanel.isExpanded)
-    end)
-    
-    toggleBtn:SetScript("OnEnter", function(self)
-        GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-        GameTooltip:SetText(OnePanel.isExpanded and "Collapse Side Panel" or "Expand Side Panel", 1, 1, 1)
-        GameTooltip:Show()
-    end)
-    toggleBtn:SetScript("OnLeave", function() GameTooltip_Hide() end)
-    
-    frame.RightSideToggleButton = toggleBtn
 
     return frame
 end
