@@ -229,10 +229,10 @@ function OnePanel:Toggle()
 end
 
 -------------------------------------------------------------------------------
--- Interactive GUI Builder Tool for Portrait & Ring Positioning/Scaling
+-- 1px Precision Nudger Tool for Portrait & Ring Positioning/Scaling
 -------------------------------------------------------------------------------
 
---- Toggle or enable the in-game GUI Builder tool for dragging and resizing portrait & ring
+--- Toggle or enable the in-game 1px Nudger tool for pixel-perfect adjustments
 -- @param enable boolean|nil: True to enable, False to disable, nil to toggle
 function OnePanel:EnableGUIBuilder(enable)
     local frame = CreateMasterFrame()
@@ -244,126 +244,136 @@ function OnePanel:EnableGUIBuilder(enable)
         self.guiBuilderEnabled = enable
     end
     
-    if not self.guiAdjusterFrame then
-        local adj = CreateFrame("Frame", "OnePanel_GUIAdjusterFrame", frame)
-        adj:SetFrameStrata("TOOLTIP")
-        adj:EnableMouse(true)
-        adj:SetMovable(true)
-        adj:EnableMouseWheel(true)
-        adj:RegisterForDrag("LeftButton")
+    if not self.nudgerWindow then
+        local nudger = CreateFrame("Frame", "OnePanel_NudgerWindow", frame)
+        nudger:SetSize(340, 180)
+        nudger:SetPoint("BOTTOMLEFT", frame, "TOPLEFT", 0, 10)
+        nudger:SetFrameStrata("TOOLTIP")
+        nudger:EnableMouse(true)
+        nudger:SetMovable(true)
+        nudger:RegisterForDrag("LeftButton")
+        nudger:SetScript("OnDragStart", function(self) self:StartMoving() end)
+        nudger:SetScript("OnDragStop", function(self) self:StopMovingOrSizing() end)
         
-        local hl = adj:CreateTexture(nil, "OVERLAY")
-        hl:SetAllPoints(adj)
-        hl:SetColorTexture(0, 1, 0, 0.25)
-        adj.Highlight = hl
+        if Utils and Utils.FrameHelper then
+            Utils.FrameHelper:ApplyBackdrop(nudger,
+                "Interface\\DialogFrame\\UI-DialogBox-Background",
+                "Interface\\DialogFrame\\UI-DialogBox-Border",
+                16, 16, { left = 4, right = 4, top = 4, bottom = 4 }
+            )
+        end
         
-        local infoText = frame:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
-        infoText:SetPoint("BOTTOMLEFT", frame, "TOPLEFT", 0, 8)
-        infoText:SetText("|cffffd100[GUI Builder Active]|r Drag = Position | Wheel = Ring Size | Shift+Wheel = Icon Size")
-        adj.InfoText = infoText
+        -- State variables
+        nudger.ringX = 0
+        nudger.ringY = 0
+        nudger.ringSize = 96
+        nudger.iconSize = 60
+        nudger.iconOffsetX = 0
+        nudger.iconOffsetY = 0
         
-        adj.ringX = 0
-        adj.ringY = 0
-        adj.ringSize = 96
-        adj.iconSize = 60
-        adj.iconOffsetX = 0
-        adj.iconOffsetY = 0
+        -- Display FontStrings
+        local title = nudger:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+        title:SetPoint("TOP", nudger, "TOP", 0, -8)
+        title:SetText("|cffffd1001px Precision Nudger Tool|r")
+        
+        local infoText = nudger:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+        infoText:SetPoint("TOPLEFT", nudger, "TOPLEFT", 12, -28)
+        infoText:SetPoint("TOPRIGHT", nudger, "TOPRIGHT", -12, -28)
+        infoText:SetJustifyH("LEFT")
+        nudger.InfoText = infoText
         
         local function UpdateLayout()
-            frame.PortraitRing:SetSize(adj.ringSize, adj.ringSize)
+            frame.PortraitRing:SetSize(nudger.ringSize, nudger.ringSize)
             frame.PortraitRing:ClearAllPoints()
-            frame.PortraitRing:SetPoint("CENTER", frame, "TOPLEFT", adj.ringX, adj.ringY)
+            frame.PortraitRing:SetPoint("CENTER", frame, "TOPLEFT", nudger.ringX, nudger.ringY)
             
-            frame.PortraitIcon:SetSize(adj.iconSize, adj.iconSize)
+            frame.PortraitIcon:SetSize(nudger.iconSize, nudger.iconSize)
             frame.PortraitIcon:ClearAllPoints()
-            frame.PortraitIcon:SetPoint("CENTER", frame.PortraitRing, "CENTER", adj.iconOffsetX, adj.iconOffsetY)
+            frame.PortraitIcon:SetPoint("CENTER", frame.PortraitRing, "CENTER", nudger.iconOffsetX, nudger.iconOffsetY)
             
-            adj:ClearAllPoints()
-            adj:SetSize(math.max(adj.ringSize, adj.iconSize), math.max(adj.ringSize, adj.iconSize))
-            adj:SetPoint("CENTER", frame.PortraitRing, "CENTER", 0, 0)
-            
-            local logMsg = string.format(
-                "Ring: Size(%d, %d) Point('CENTER', frame, 'TOPLEFT', %d, %d) | Icon: Size(%d, %d) Point('CENTER', ring, 'CENTER', %d, %d)",
-                adj.ringSize, adj.ringSize, adj.ringX, adj.ringY,
-                adj.iconSize, adj.iconSize, adj.iconOffsetX, adj.iconOffsetY
-            )
-            adj.InfoText:SetText("|cffffd100[GUI Builder]|r " .. logMsg)
+            local line1 = string.format("Ring Size: |cffffffff%d x %d|r  |  Ring Offset: |cffffffffX=%d, Y=%d|r",
+                nudger.ringSize, nudger.ringSize, nudger.ringX, nudger.ringY)
+            local line2 = string.format("Icon Size: |cffffffff%d x %d|r  |  Icon Offset: |cffffffffX=%d, Y=%d|r",
+                nudger.iconSize, nudger.iconSize, nudger.iconOffsetX, nudger.iconOffsetY)
+            nudger.InfoText:SetText(line1 .. "\n" .. line2)
             
             if Utils and Utils.Logger then
-                Utils.Logger:Log("GUI_BUILDER", "INFO", logMsg)
+                Utils.Logger:Log("NUDGER", "INFO", line1 .. " | " .. line2)
             end
         end
-        adj.UpdateLayout = UpdateLayout
+        nudger.UpdateLayout = UpdateLayout
         
-        adj:SetScript("OnDragStart", function(self)
-            self.isDragging = true
-            local curX, curY = GetCursorPosition()
-            local uiScale = UIParent:GetEffectiveScale()
-            self.startX = curX / uiScale
-            self.startY = curY / uiScale
-            self.origRingX = self.ringX
-            self.origRingY = self.ringY
-        end)
+        -- Helper to create 1px Nudge buttons
+        local function CreateNudgeBtn(name, label, width, x, y, onClick)
+            local btn = CreateFrame("Button", name, nudger, "UIPanelButtonTemplate")
+            btn:SetSize(width, 22)
+            btn:SetPoint("TOPLEFT", nudger, "TOPLEFT", x, y)
+            btn:SetText(label)
+            btn:SetScript("OnClick", function()
+                onClick()
+                nudger:UpdateLayout()
+            end)
+            return btn
+        end
         
-        adj:SetScript("OnDragStop", function(self)
-            self.isDragging = false
+        -- Row 1: Ring Position 1px Directional Nudgers
+        CreateNudgeBtn("OP_NudgeUp", "▲ Up (+1)", 74, 12, -62, function() nudger.ringY = nudger.ringY + 1 end)
+        CreateNudgeBtn("OP_NudgeDown", "▼ Down (-1)", 74, 90, -62, function() nudger.ringY = nudger.ringY - 1 end)
+        CreateNudgeBtn("OP_NudgeLeft", "◄ Left (-1)", 74, 168, -62, function() nudger.ringX = nudger.ringX - 1 end)
+        CreateNudgeBtn("OP_NudgeRight", "Right ► (+1)", 82, 246, -62, function() nudger.ringX = nudger.ringX + 1 end)
+        
+        -- Row 2: Ring Size & Icon Size 1px Controls
+        CreateNudgeBtn("OP_RingPlus", "Ring +1", 74, 12, -90, function() nudger.ringSize = nudger.ringSize + 1 end)
+        CreateNudgeBtn("OP_RingMinus", "Ring -1", 74, 90, -90, function() nudger.ringSize = math.max(10, nudger.ringSize - 1) end)
+        CreateNudgeBtn("OP_IconPlus", "Icon +1", 74, 168, -90, function() nudger.iconSize = nudger.iconSize + 1 end)
+        CreateNudgeBtn("OP_IconMinus", "Icon -1", 82, 246, -90, function() nudger.iconSize = math.max(10, nudger.iconSize - 1) end)
+        
+        -- Row 3: Icon Offset Nudgers
+        CreateNudgeBtn("OP_IconOffsetXMinus", "Icon X-1", 74, 12, -118, function() nudger.iconOffsetX = nudger.iconOffsetX - 1 end)
+        CreateNudgeBtn("OP_IconOffsetXPlus", "Icon X+1", 74, 90, -118, function() nudger.iconOffsetX = nudger.iconOffsetX + 1 end)
+        CreateNudgeBtn("OP_IconOffsetYMinus", "Icon Y-1", 74, 168, -118, function() nudger.iconOffsetY = nudger.iconOffsetY - 1 end)
+        CreateNudgeBtn("OP_IconOffsetYPlus", "Icon Y+1", 82, 246, -118, function() nudger.iconOffsetY = nudger.iconOffsetY + 1 end)
+        
+        -- Row 4: Copy / Print Coordinates Button
+        local printBtn = CreateFrame("Button", "OP_PrintCoordsBtn", nudger, "UIPanelButtonTemplate")
+        printBtn:SetSize(316, 22)
+        printBtn:SetPoint("TOPLEFT", nudger, "TOPLEFT", 12, -146)
+        printBtn:SetText("Log / Print Coordinates to Chat & Swatter")
+        printBtn:SetScript("OnClick", function()
+            local code1 = string.format("portraitRing:SetSize(%d, %d)", nudger.ringSize, nudger.ringSize)
+            local code2 = string.format("portraitRing:SetPoint('CENTER', frame, 'TOPLEFT', %d, %d)", nudger.ringX, nudger.ringY)
+            local code3 = string.format("portraitIcon:SetSize(%d, %d)", nudger.iconSize, nudger.iconSize)
+            local code4 = string.format("portraitIcon:SetPoint('CENTER', portraitRing, 'CENTER', %d, %d)", nudger.iconOffsetX, nudger.iconOffsetY)
+            
             if DEFAULT_CHAT_FRAME then
-                DEFAULT_CHAT_FRAME:AddMessage("|cffffd100[OnePanel GUI Builder]|r " .. self.InfoText:GetText())
+                DEFAULT_CHAT_FRAME:AddMessage("|cffffd100[OnePanel Nudger Final Coordinates]|r")
+                DEFAULT_CHAT_FRAME:AddMessage("|cffffffff" .. code1 .. "|r")
+                DEFAULT_CHAT_FRAME:AddMessage("|cffffffff" .. code2 .. "|r")
+                DEFAULT_CHAT_FRAME:AddMessage("|cffffffff" .. code3 .. "|r")
+                DEFAULT_CHAT_FRAME:AddMessage("|cffffffff" .. code4 .. "|r")
+            end
+            if Utils and Utils.Logger then
+                Utils.Logger:Log("NUDGER_SAVE", "INFO", code1 .. " | " .. code2 .. " | " .. code3 .. " | " .. code4)
             end
         end)
         
-        adj:SetScript("OnUpdate", function(self)
-            if self.isDragging then
-                local curX, curY = GetCursorPosition()
-                local uiScale = UIParent:GetEffectiveScale()
-                local diffX = (curX / uiScale) - self.startX
-                local diffY = (curY / uiScale) - self.startY
-                self.ringX = math.floor(self.origRingX + diffX + 0.5)
-                self.ringY = math.floor(self.origRingY + diffY + 0.5)
-                self:UpdateLayout()
-            end
-        end)
-        
-        adj:SetScript("OnMouseWheel", function(self, delta)
-            if IsShiftKeyDown() then
-                self.iconSize = math.max(16, self.iconSize + (delta * 2))
-            elseif IsAltKeyDown() then
-                self.iconOffsetY = self.iconOffsetY + (delta * 2)
-            elseif IsControlKeyDown() then
-                self.iconOffsetX = self.iconOffsetX + (delta * 2)
-            else
-                self.ringSize = math.max(20, self.ringSize + (delta * 2))
-            end
-            self:UpdateLayout()
-            if DEFAULT_CHAT_FRAME then
-                DEFAULT_CHAT_FRAME:AddMessage("|cffffd100[OnePanel GUI Builder]|r " .. self.InfoText:GetText())
-            end
-        end)
-        
-        self.guiAdjusterFrame = adj
+        self.nudgerWindow = nudger
     end
     
     if self.guiBuilderEnabled then
         frame:Show()
-        self.guiAdjusterFrame:Show()
-        self.guiAdjusterFrame.InfoText:Show()
-        self.guiAdjusterFrame:UpdateLayout()
+        self.nudgerWindow:Show()
+        self.nudgerWindow:UpdateLayout()
         if DEFAULT_CHAT_FRAME then
-            DEFAULT_CHAT_FRAME:AddMessage("|cff00ff00[OnePanel GUI Builder ENABLED]|r")
-            DEFAULT_CHAT_FRAME:AddMessage("|cffffffff• Left-Click & Drag: Move Ring & Icon|r")
-            DEFAULT_CHAT_FRAME:AddMessage("|cffffffff• Mouse Wheel: Resize Ring Size|r")
-            DEFAULT_CHAT_FRAME:AddMessage("|cffffffff• Shift + Mouse Wheel: Resize Icon Size|r")
-            DEFAULT_CHAT_FRAME:AddMessage("|cffffffff• Alt + Mouse Wheel: Adjust Icon Y-Offset|r")
-            DEFAULT_CHAT_FRAME:AddMessage("|cffffffff• Ctrl + Mouse Wheel: Adjust Icon X-Offset|r")
-            DEFAULT_CHAT_FRAME:AddMessage("|cffffffffType /opgui again to toggle off.|r")
+            DEFAULT_CHAT_FRAME:AddMessage("|cff00ff00[OnePanel 1px Nudger ENABLED]|r Use on-screen buttons to adjust position by 1px steps.")
+            DEFAULT_CHAT_FRAME:AddMessage("|cffffffffType /opgui or /onepanelgui again to hide.|r")
         end
     else
-        if self.guiAdjusterFrame then
-            self.guiAdjusterFrame:Hide()
-            self.guiAdjusterFrame.InfoText:Hide()
+        if self.nudgerWindow then
+            self.nudgerWindow:Hide()
         end
         if DEFAULT_CHAT_FRAME then
-            DEFAULT_CHAT_FRAME:AddMessage("|cffff0000[OnePanel GUI Builder DISABLED]|r")
+            DEFAULT_CHAT_FRAME:AddMessage("|cffff0000[OnePanel 1px Nudger DISABLED]|r")
         end
     end
 end
