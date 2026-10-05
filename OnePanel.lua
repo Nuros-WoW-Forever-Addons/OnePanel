@@ -88,17 +88,17 @@ local function CreateMasterFrame()
     headerText:SetText("|cffffffff" .. (UnitName("player") or "Player") .. "|r")
     frame.Title = headerText
     
-    -- Top-Left Scaled Circular Class/Player Portrait Icon (Positioned cleanly on top-left corner)
+    -- Top-Left Scaled Circular Class/Player Portrait Icon (Positioned cleanly inside top-left corner)
     local classIcon = frame:CreateTexture(nil, "ARTWORK")
-    classIcon:SetSize(46, 46)
-    classIcon:SetPoint("TOPLEFT", frame, "TOPLEFT", -2, 2)
+    classIcon:SetSize(50, 50)
+    classIcon:SetPoint("TOPLEFT", frame, "TOPLEFT", 8, -8)
     if Utils and Utils.FrameHelper then
         Utils.FrameHelper:SetClassIcon(classIcon)
     end
     frame.ClassIcon = classIcon
     
     local classRing = frame:CreateTexture(nil, "OVERLAY")
-    classRing:SetSize(62, 62)
+    classRing:SetSize(66, 66)
     classRing:SetPoint("CENTER", classIcon, "CENTER", 0, 0)
     classRing:SetTexture("Interface\\Minimap\\MiniMap-TrackingBorder")
     classRing:SetDesaturated(true)
