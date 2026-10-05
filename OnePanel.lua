@@ -90,7 +90,7 @@ local function CreateMasterFrame()
     
     -- Top-Left Scaled Circular Class/Player Portrait Icon (Positioned cleanly on top-left corner)
     local classIcon = frame:CreateTexture(nil, "ARTWORK")
-    classIcon:SetSize(52, 52)
+    classIcon:SetSize(50, 50)
     classIcon:SetPoint("TOPLEFT", frame, "TOPLEFT", -6, 6)
     if Utils and Utils.FrameHelper then
         Utils.FrameHelper:SetClassIcon(classIcon)
@@ -98,9 +98,9 @@ local function CreateMasterFrame()
     frame.ClassIcon = classIcon
     
     local classRing = frame:CreateTexture(nil, "OVERLAY")
-    classRing:SetSize(72, 72)
-    classRing:SetPoint("CENTER", classIcon, "CENTER", 1, -1)
-    classRing:SetTexture("Interface\\TargetingFrame\\UI-TargetingFrame-PortraitFrame")
+    classRing:SetSize(68, 68)
+    classRing:SetPoint("CENTER", classIcon, "CENTER", 0, 0)
+    classRing:SetTexture("Interface\\Minimap\\MiniMap-TrackingBorder")
     frame.ClassRing = classRing
     
     -- Close Button
