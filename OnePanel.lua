@@ -112,21 +112,21 @@ local function CreateMasterFrame()
     frame.Title = headerText
     
     -- Top-Left Circular Portrait Ring & Icon (Master Host Base Shell Feature)
-    local portraitIcon = frame:CreateTexture("OnePanelFramePortraitIcon", "ARTWORK")
-    portraitIcon:SetSize(40, 40)
-    portraitIcon:SetPoint("TOPLEFT", frame, "TOPLEFT", 6, -6)
-    if Utils and Utils.FrameHelper then
-        Utils.FrameHelper:SetClassIcon(portraitIcon)
-    end
-    frame.PortraitIcon = portraitIcon
-    
     local portraitRing = frame:CreateTexture("OnePanelFramePortraitRing", "OVERLAY")
-    portraitRing:SetSize(56, 56)
-    portraitRing:SetPoint("CENTER", portraitIcon, "CENTER", 0, 0)
+    portraitRing:SetSize(96, 96)
+    portraitRing:SetPoint("CENTER", frame, "TOPLEFT", 0, 0)
     portraitRing:SetTexture("Interface\\Minimap\\MiniMap-TrackingBorder")
     portraitRing:SetDesaturated(true)
     portraitRing:SetVertexColor(0.85, 0.85, 0.85)
     frame.PortraitRing = portraitRing
+    
+    local portraitIcon = frame:CreateTexture("OnePanelFramePortraitIcon", "ARTWORK")
+    portraitIcon:SetSize(60, 60)
+    portraitIcon:SetPoint("CENTER", portraitRing, "CENTER", 0, 0)
+    if Utils and Utils.FrameHelper then
+        Utils.FrameHelper:SetClassIcon(portraitIcon)
+    end
+    frame.PortraitIcon = portraitIcon
     
     -- Close Button
     local closeBtn = CreateFrame("Button", "OnePanelFrameCloseButton", frame, "UIPanelCloseButton")
