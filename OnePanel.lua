@@ -1,6 +1,7 @@
 --[[
     OnePanel - OnePanel.lua
-    Master host frame shell, dynamic title bar, class header symbol, and plugin registry.
+    Master host frame shell, centered character title, top-left scaled circular portrait,
+    subdued background art, and collapsible side panel window sizing.
 --]]
 
 local addonName, addonTable = ...
@@ -12,20 +13,36 @@ OnePanel.version = "0.0.1"
 OnePanel.plugins = {}
 OnePanel.pluginOrder = {}
 OnePanel.activePluginId = nil
+OnePanel.isExpanded = true
 
 local Utils = _G.OnePanelUtils
 
 -------------------------------------------------------------------------------
--- Dynamic Title Bar API
+-- Dynamic Title Bar & Window Width API
 -------------------------------------------------------------------------------
 
---- Dynamically set the main window title header
--- @param titleText string: Title text to display
+--- Dynamically set the main window title header (centered First & Last name)
+-- @param titleText string: Optional custom title override
 function OnePanel:SetTitleText(titleText)
     if self.frame and self.frame.Title then
         local name = UnitName("player") or "Player"
-        local displayTitle = titleText and (name .. " - " .. titleText) or ("OnePanel Suite")
-        self.frame.Title:SetText("|cff00ccff" .. displayTitle .. "|r")
+        local displayTitle = titleText or name
+        self.frame.Title:SetText("|cffffffff" .. displayTitle .. "|r")
+    end
+end
+
+--- Collapse or Expand the master window frame width
+-- @param expanded boolean: True to expand (832px), False to collapse (520px)
+function OnePanel:SetPanelExpanded(expanded)
+    self.isExpanded = (expanded ~= false)
+    if self.frame then
+        local targetWidth = self.isExpanded and 832 or 520
+        self.frame:SetWidth(targetWidth)
+        
+        -- Fire event for plugins to show/hide sub-panels
+        if Utils and Utils.EventBus then
+            Utils.EventBus:Trigger("ONEPANEL_EXPAND_STATE_CHANGED", self.isExpanded)
+        end
     end
 end
 
@@ -66,23 +83,23 @@ local function CreateMasterFrame()
         Utils.FrameHelper:RegisterEscClose("OnePanelFrame")
     end
     
-    -- Dynamic Title Header FontString
-    local headerText = frame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
-    headerText:SetPoint("TOPLEFT", frame, "TOPLEFT", 24, -18)
-    headerText:SetText("|cff00ccffOnePanel|r")
+    -- Centered Title Header FontString (First & Last Name)
+    local headerText = frame:CreateFontString(nil, "OVERLAY", "GameFontNormalMed3")
+    headerText:SetPoint("TOP", frame, "TOP", 0, -12)
+    headerText:SetText("|cffffffff" .. (UnitName("player") or "Player") .. "|r")
     frame.Title = headerText
     
-    -- Top Right Circular Class Symbol Icon
+    -- Top-Left Scaled Circular Class/Player Portrait Icon (Overlapping top-left corner)
     local classIcon = frame:CreateTexture(nil, "ARTWORK")
-    classIcon:SetSize(28, 28)
-    classIcon:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -44, -12)
+    classIcon:SetSize(54, 54)
+    classIcon:SetPoint("TOPLEFT", frame, "TOPLEFT", -12, 12)
     if Utils and Utils.FrameHelper then
         Utils.FrameHelper:SetClassIcon(classIcon)
     end
     frame.ClassIcon = classIcon
     
     local classRing = frame:CreateTexture(nil, "OVERLAY")
-    classRing:SetSize(34, 34)
+    classRing:SetSize(68, 68)
     classRing:SetPoint("CENTER", classIcon, "CENTER", 0, 0)
     classRing:SetTexture("Interface\\Minimap\\MiniMap-TrackingBorder")
     frame.ClassRing = classRing
@@ -95,14 +112,20 @@ local function CreateMasterFrame()
     end)
     frame.CloseButton = closeBtn
     
-    -- Inner Content Display Area (Container for Plugin Views)
+    -- Inner Content Display Area (Container for Plugin Views with Subdued Dark Background)
     local contentArea = CreateFrame("Frame", "OnePanelContentArea", frame)
     contentArea:SetPoint("TOPLEFT", frame, "TOPLEFT", 18, -45)
     contentArea:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -18, 18)
     
+    -- Subdued dark backdrop art
+    local bg = contentArea:CreateTexture(nil, "BACKGROUND")
+    bg:SetAllPoints(contentArea)
+    bg:SetTexture("Interface\\FrameGeneral\\UI-Background-Marble")
+    bg:SetVertexColor(0.2, 0.2, 0.2, 1.0)
+    
     if Utils and Utils.FrameHelper then
         Utils.FrameHelper:ApplyBackdrop(contentArea,
-            "Interface\\FrameGeneral\\UI-Background-Marble",
+            nil,
             "Interface\\Tooltips\\UI-Tooltip-Border",
             16, 16, { left = 4, right = 4, top = 4, bottom = 4 }
         )
