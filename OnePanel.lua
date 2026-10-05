@@ -143,19 +143,25 @@ local function CreateMasterFrame()
         )
     end
     frame.ContentArea = contentArea
-    -- Native Right-Side Collapse / Expand Toggle Button
+    -- Native Right-Side Collapse / Expand Toggle Button (Matches CharacterFrameRightPaneToggleButton)
     local toggleBtn = CreateFrame("Button", "OnePanel_RightSideToggleButton", frame)
-    toggleBtn:SetSize(22, 22)
-    toggleBtn:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -4, -6)
-    toggleBtn:SetFrameLevel(frame:GetFrameLevel() + 20)
+    toggleBtn:SetSize(28, 28)
+    toggleBtn:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -6, -6)
+    toggleBtn:SetFrameLevel(510)
     
     local toggleIcon = toggleBtn:CreateTexture(nil, "ARTWORK")
     toggleIcon:SetAllPoints(toggleBtn)
-    toggleIcon:SetTexture("Interface\\Buttons\\UI-SpellbookSearch-DrillDown")
+    local setNorm = pcall(function() toggleIcon:SetTexture(130869) end)
+    if not setNorm or not toggleIcon:GetTexture() then
+        toggleIcon:SetTexture("Interface\\Buttons\\UI-SpellbookSearch-DrillDown")
+    end
     toggleBtn.Icon = toggleIcon
     
     local toggleHilight = toggleBtn:CreateTexture(nil, "HIGHLIGHT")
-    toggleHilight:SetTexture("Interface\\Buttons\\UI-Common-MouseHilight")
+    local setHilight = pcall(function() toggleHilight:SetTexture(130757) end)
+    if not setHilight or not toggleHilight:GetTexture() then
+        toggleHilight:SetTexture("Interface\\Buttons\\UI-Common-MouseHilight")
+    end
     toggleHilight:SetBlendMode("ADD")
     toggleHilight:SetAllPoints(toggleBtn)
     

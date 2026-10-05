@@ -32,16 +32,23 @@ end
 -- Right-Side Vertical Tab Button Construction
 -------------------------------------------------------------------------------
 
---- Programmatically build a vertical right-side tab button
+--- Programmatically build a vertical right-side tab button (Matches CharacterFrameModeTab 55x55)
 -- @param index number: Tab index position
 -- @param pluginId string: Unique plugin identifier
 -- @return Button: Created side tab button
 local function CreateSideTabButton(index, pluginId)
-    local parentFrame = OnePanel.frame
-    local buttonName = "OnePanelSideTab" .. index
+    local modeTabsFrame = TabManager.modeTabsFrame
+    if not modeTabsFrame then
+        modeTabsFrame = CreateFrame("Frame", "OnePanel_ModeTabs", OnePanel.frame)
+        modeTabsFrame:SetSize(64, 384)
+        modeTabsFrame:SetPoint("TOPLEFT", OnePanel.frame, "TOPRIGHT", 0, -30)
+        modeTabsFrame:SetFrameLevel(OnePanel.frame:GetFrameLevel() + 2)
+        TabManager.modeTabsFrame = modeTabsFrame
+    end
     
-    local tab = CreateFrame("Button", buttonName, parentFrame)
-    tab:SetSize(34, 36)
+    local buttonName = "OnePanelSideTab" .. index
+    local tab = CreateFrame("Button", buttonName, modeTabsFrame)
+    tab:SetSize(55, 55)
     tab:SetID(index)
     tab.pluginId = pluginId
     
@@ -53,7 +60,7 @@ local function CreateSideTabButton(index, pluginId)
     
     -- Main Icon Texture
     local icon = tab:CreateTexture(buttonName .. "Icon", "ARTWORK")
-    icon:SetSize(24, 24)
+    icon:SetSize(36, 36)
     icon:SetPoint("CENTER", tab, "CENTER", -1, 0)
     icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
     tab.Icon = icon
@@ -212,7 +219,7 @@ function TabManager:RefreshTabs()
             if plugin.use3DPortrait or pluginId == "Character" then
                 if not btn.PlayerModel then
                     local model = CreateFrame("PlayerModel", btn:GetName() .. "3DPortrait", btn)
-                    model:SetSize(24, 24)
+                    model:SetSize(36, 36)
                     model:SetPoint("CENTER", btn, "CENTER", -1, 0)
                     model:SetFrameLevel(btn:GetFrameLevel() + 2)
                     model:SetUnit("player")
@@ -249,8 +256,8 @@ end
 --- Update active vs inactive visual highlights on right-side tabs
 function TabManager:UpdateTabHighlights()
     local activeId = OnePanel.activePluginId
-    local frame = OnePanel.frame
-    if not frame then return end
+    local modeTabsFrame = TabManager.modeTabsFrame
+    if not modeTabsFrame then return end
     
     for i, btn in ipairs(self.tabButtons) do
         if btn and btn:IsShown() then
@@ -260,9 +267,9 @@ function TabManager:UpdateTabHighlights()
             local xOffset = isSelected and 2 or -2
             
             if i == 1 then
-                btn:SetPoint("TOPLEFT", frame, "TOPRIGHT", xOffset, -48)
+                btn:SetPoint("TOPLEFT", modeTabsFrame, "TOPLEFT", xOffset, 0)
             else
-                btn:SetPoint("TOPLEFT", self.tabButtons[i - 1], "BOTTOMLEFT", 0, -8)
+                btn:SetPoint("TOPLEFT", self.tabButtons[i - 1], "BOTTOMLEFT", 0, -6)
             end
             
             if isSelected then
