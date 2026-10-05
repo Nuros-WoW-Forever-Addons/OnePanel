@@ -268,6 +268,15 @@ function OnePanel:EnableGUIBuilder(enable)
         nudger.ringX = 0
         nudger.ringY = 0
         nudger.ringSize = 96
+        nudger.textureIdx = 1
+        
+        nudger.textures = {
+            "Interface\\Buttons\\IconBorder-GlowRing",
+            "Interface\\Common\\IconBorder-GlowRing",
+            "Interface\\Minimap\\UI-Minimap-Border",
+            "Interface\\TargetingFrame\\UI-TargetingFrame-PortraitFrame",
+            "Interface\\Minimap\\MiniMap-TrackingBorder",
+        }
         
         -- Display FontStrings
         local title = nudger:CreateFontString(nil, "OVERLAY", "GameFontNormal")
@@ -275,18 +284,21 @@ function OnePanel:EnableGUIBuilder(enable)
         title:SetText("|cffffd100Border Ring 1px Nudger Tool|r")
         
         local infoText = nudger:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
-        infoText:SetPoint("TOPLEFT", nudger, "TOPLEFT", 12, -28)
-        infoText:SetPoint("TOPRIGHT", nudger, "TOPRIGHT", -12, -28)
+        infoText:SetPoint("TOPLEFT", nudger, "TOPLEFT", 12, -26)
+        infoText:SetPoint("TOPRIGHT", nudger, "TOPRIGHT", -12, -26)
         infoText:SetJustifyH("CENTER")
         nudger.InfoText = infoText
         
         local function UpdateLayout()
+            local texPath = nudger.textures[nudger.textureIdx] or nudger.textures[1]
+            frame.PortraitRing:SetTexture(texPath)
             frame.PortraitRing:SetSize(nudger.ringSize, nudger.ringSize)
             frame.PortraitRing:ClearAllPoints()
             frame.PortraitRing:SetPoint("CENTER", frame, "TOPLEFT", nudger.ringX, nudger.ringY)
             
-            local statusStr = string.format("Ring Size: |cffffffff%d x %d|r  |  Center Point: |cffffffffX=%d, Y=%d|r",
-                nudger.ringSize, nudger.ringSize, nudger.ringX, nudger.ringY)
+            local shortTex = texPath:match("[^\\]+$") or texPath
+            local statusStr = string.format("Tex: |cff00ff00%s|r | Size: |cffffffff%d x %d|r | Pos: |cffffffffX=%d, Y=%d|r",
+                shortTex, nudger.ringSize, nudger.ringSize, nudger.ringX, nudger.ringY)
             nudger.InfoText:SetText(statusStr)
             
             if Utils and Utils.Logger then
@@ -309,39 +321,47 @@ function OnePanel:EnableGUIBuilder(enable)
         end
         
         -- Row 1: 1px Fine Position Nudgers
-        CreateNudgeBtn("OP_NudgeUp1", "▲ Up +1", 74, 12, -54, function() nudger.ringY = nudger.ringY + 1 end)
-        CreateNudgeBtn("OP_NudgeDown1", "▼ Down -1", 74, 90, -54, function() nudger.ringY = nudger.ringY - 1 end)
-        CreateNudgeBtn("OP_NudgeLeft1", "◄ Left -1", 74, 168, -54, function() nudger.ringX = nudger.ringX - 1 end)
-        CreateNudgeBtn("OP_NudgeRight1", "Right ► +1", 82, 246, -54, function() nudger.ringX = nudger.ringX + 1 end)
+        CreateNudgeBtn("OP_NudgeUp1", "▲ Up +1", 74, 12, -50, function() nudger.ringY = nudger.ringY + 1 end)
+        CreateNudgeBtn("OP_NudgeDown1", "▼ Down -1", 74, 90, -50, function() nudger.ringY = nudger.ringY - 1 end)
+        CreateNudgeBtn("OP_NudgeLeft1", "◄ Left -1", 74, 168, -50, function() nudger.ringX = nudger.ringX - 1 end)
+        CreateNudgeBtn("OP_NudgeRight1", "Right ► +1", 82, 246, -50, function() nudger.ringX = nudger.ringX + 1 end)
         
         -- Row 2: 5px Fast Position Nudgers
-        CreateNudgeBtn("OP_NudgeUp5", "▲ Up +5", 74, 12, -80, function() nudger.ringY = nudger.ringY + 5 end)
-        CreateNudgeBtn("OP_NudgeDown5", "▼ Down -5", 74, 90, -80, function() nudger.ringY = nudger.ringY - 5 end)
-        CreateNudgeBtn("OP_NudgeLeft5", "◄ Left -5", 74, 168, -80, function() nudger.ringX = nudger.ringX - 5 end)
-        CreateNudgeBtn("OP_NudgeRight5", "Right ► +5", 82, 246, -80, function() nudger.ringX = nudger.ringX + 5 end)
+        CreateNudgeBtn("OP_NudgeUp5", "▲ Up +5", 74, 12, -74, function() nudger.ringY = nudger.ringY + 5 end)
+        CreateNudgeBtn("OP_NudgeDown5", "▼ Down -5", 74, 90, -74, function() nudger.ringY = nudger.ringY - 5 end)
+        CreateNudgeBtn("OP_NudgeLeft5", "◄ Left -5", 74, 168, -74, function() nudger.ringX = nudger.ringX - 5 end)
+        CreateNudgeBtn("OP_NudgeRight5", "Right ► +5", 82, 246, -74, function() nudger.ringX = nudger.ringX + 5 end)
         
         -- Row 3: Ring Size Nudgers
-        CreateNudgeBtn("OP_RingSizePlus1", "Size +1", 74, 12, -106, function() nudger.ringSize = nudger.ringSize + 1 end)
-        CreateNudgeBtn("OP_RingSizeMinus1", "Size -1", 74, 90, -106, function() nudger.ringSize = math.max(10, nudger.ringSize - 1) end)
-        CreateNudgeBtn("OP_RingSizePlus5", "Size +5", 74, 168, -106, function() nudger.ringSize = nudger.ringSize + 5 end)
-        CreateNudgeBtn("OP_RingSizeMinus5", "Size -5", 82, 246, -106, function() nudger.ringSize = math.max(10, nudger.ringSize - 5) end)
+        CreateNudgeBtn("OP_RingSizePlus1", "Size +1", 74, 12, -98, function() nudger.ringSize = nudger.ringSize + 1 end)
+        CreateNudgeBtn("OP_RingSizeMinus1", "Size -1", 74, 90, -98, function() nudger.ringSize = math.max(10, nudger.ringSize - 1) end)
+        CreateNudgeBtn("OP_RingSizePlus5", "Size +5", 74, 168, -98, function() nudger.ringSize = nudger.ringSize + 5 end)
+        CreateNudgeBtn("OP_RingSizeMinus5", "Size -5", 82, 246, -98, function() nudger.ringSize = math.max(10, nudger.ringSize - 5) end)
         
-        -- Row 4: Log / Print Final Ring Coordinates Button
+        -- Row 4: Texture Cycler Button
+        CreateNudgeBtn("OP_CycleTexBtn", "Cycle Texture (IconBorder-GlowRing etc.)", 316, 12, -122, function()
+            nudger.textureIdx = (nudger.textureIdx % #nudger.textures) + 1
+        end)
+        
+        -- Row 5: Log / Print Final Ring Coordinates Button
         local printBtn = CreateFrame("Button", "OP_PrintRingCoordsBtn", nudger, "UIPanelButtonTemplate")
-        printBtn:SetSize(316, 24)
-        printBtn:SetPoint("TOPLEFT", nudger, "TOPLEFT", 12, -136)
+        printBtn:SetSize(316, 22)
+        printBtn:SetPoint("TOPLEFT", nudger, "TOPLEFT", 12, -146)
         printBtn:SetText("Log / Print Final Ring Coordinates to Chat & Swatter")
         printBtn:SetScript("OnClick", function()
-            local code1 = string.format("portraitRing:SetSize(%d, %d)", nudger.ringSize, nudger.ringSize)
-            local code2 = string.format("portraitRing:SetPoint('CENTER', frame, 'TOPLEFT', %d, %d)", nudger.ringX, nudger.ringY)
+            local tex = nudger.textures[nudger.textureIdx] or nudger.textures[1]
+            local code1 = string.format("portraitRing:SetTexture('%s')", tex)
+            local code2 = string.format("portraitRing:SetSize(%d, %d)", nudger.ringSize, nudger.ringSize)
+            local code3 = string.format("portraitRing:SetPoint('CENTER', frame, 'TOPLEFT', %d, %d)", nudger.ringX, nudger.ringY)
             
             if DEFAULT_CHAT_FRAME then
                 DEFAULT_CHAT_FRAME:AddMessage("|cffffd100[OnePanel Final Ring Coordinates]|r")
                 DEFAULT_CHAT_FRAME:AddMessage("|cffffffff" .. code1 .. "|r")
                 DEFAULT_CHAT_FRAME:AddMessage("|cffffffff" .. code2 .. "|r")
+                DEFAULT_CHAT_FRAME:AddMessage("|cffffffff" .. code3 .. "|r")
             end
             if Utils and Utils.Logger then
-                Utils.Logger:Log("RING_NUDGER_SAVE", "INFO", code1 .. " | " .. code2)
+                Utils.Logger:Log("RING_NUDGER_SAVE", "INFO", code1 .. " | " .. code2 .. " | " .. code3)
             end
         end)
         
