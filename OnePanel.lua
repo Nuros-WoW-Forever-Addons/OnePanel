@@ -45,6 +45,29 @@ function OnePanel:SetPanelExpanded(expanded)
     end
 end
 
+--- Set or update the header portrait icon inside OnePanel's master frame ring
+-- @param texturePath string|nil: Icon texture path
+-- @param texCoords table|nil: Optional {left, right, top, bottom} coords
+-- @param usePlayerPortrait boolean|nil: If true, calls SetPortraitTexture for player
+function OnePanel:SetHeaderPortrait(texturePath, texCoords, usePlayerPortrait)
+    if not self.frame or not self.frame.PortraitIcon then return end
+    
+    if usePlayerPortrait then
+        SetPortraitTexture(self.frame.PortraitIcon, "player")
+    elseif texturePath then
+        self.frame.PortraitIcon:SetTexture(texturePath)
+        if texCoords and type(texCoords) == "table" and #texCoords == 4 then
+            self.frame.PortraitIcon:SetTexCoord(unpack(texCoords))
+        else
+            self.frame.PortraitIcon:SetTexCoord(0, 1, 0, 1)
+        end
+    else
+        if Utils and Utils.FrameHelper then
+            Utils.FrameHelper:SetClassIcon(self.frame.PortraitIcon)
+        end
+    end
+end
+
 -------------------------------------------------------------------------------
 -- Host Canvas Frame Initialization
 -------------------------------------------------------------------------------
@@ -88,22 +111,22 @@ local function CreateMasterFrame()
     headerText:SetText("|cffffffff" .. (UnitName("player") or "Player") .. "|r")
     frame.Title = headerText
     
-    -- Top-Left Scaled Circular Class/Player Portrait Icon (Positioned cleanly inside top-left corner)
-    local classIcon = frame:CreateTexture(nil, "ARTWORK")
-    classIcon:SetSize(50, 50)
-    classIcon:SetPoint("TOPLEFT", frame, "TOPLEFT", 8, -8)
+    -- Top-Left Circular Portrait Ring & Icon (Master Host Base Shell Feature)
+    local portraitIcon = frame:CreateTexture("OnePanelFramePortraitIcon", "ARTWORK")
+    portraitIcon:SetSize(40, 40)
+    portraitIcon:SetPoint("TOPLEFT", frame, "TOPLEFT", 6, -6)
     if Utils and Utils.FrameHelper then
-        Utils.FrameHelper:SetClassIcon(classIcon)
+        Utils.FrameHelper:SetClassIcon(portraitIcon)
     end
-    frame.ClassIcon = classIcon
+    frame.PortraitIcon = portraitIcon
     
-    local classRing = frame:CreateTexture(nil, "OVERLAY")
-    classRing:SetSize(66, 66)
-    classRing:SetPoint("CENTER", classIcon, "CENTER", 0, 0)
-    classRing:SetTexture("Interface\\Minimap\\MiniMap-TrackingBorder")
-    classRing:SetDesaturated(true)
-    classRing:SetVertexColor(0.85, 0.85, 0.85)
-    frame.ClassRing = classRing
+    local portraitRing = frame:CreateTexture("OnePanelFramePortraitRing", "OVERLAY")
+    portraitRing:SetSize(56, 56)
+    portraitRing:SetPoint("CENTER", portraitIcon, "CENTER", 0, 0)
+    portraitRing:SetTexture("Interface\\Minimap\\MiniMap-TrackingBorder")
+    portraitRing:SetDesaturated(true)
+    portraitRing:SetVertexColor(0.85, 0.85, 0.85)
+    frame.PortraitRing = portraitRing
     
     -- Close Button
     local closeBtn = CreateFrame("Button", "OnePanelFrameCloseButton", frame, "UIPanelCloseButton")
