@@ -1,6 +1,6 @@
 --[[
     OnePanel - TabManager.lua
-    Right-side vertical tab controller, icon tab styling, and view container swapper.
+    Right-side vertical tab controller, 3D tab portraits, dynamic titles, and view swapper.
 --]]
 
 local addonName, addonTable = ...
@@ -155,6 +155,12 @@ function TabManager:SelectTab(pluginId)
     end
     
     OnePanel.activePluginId = pluginId
+    
+    -- Update dynamic title bar
+    if OnePanel.SetTitleText then
+        OnePanel:SetTitleText(plugin.title or pluginId)
+    end
+    
     self:UpdateTabHighlights()
     
     if Utils and Utils.EventBus then
@@ -186,9 +192,31 @@ function TabManager:RefreshTabs()
             end
             
             btn.pluginId = pluginId
-            if plugin.icon then
-                btn.Icon:SetTexture(plugin.icon)
+            
+            -- Check for 3D portrait tab requirement
+            if plugin.use3DPortrait or pluginId == "Character" then
+                if not btn.PlayerModel then
+                    local model = CreateFrame("PlayerModel", btn:GetName() .. "3DPortrait", btn)
+                    model:SetSize(28, 28)
+                    model:SetPoint("CENTER", btn, "CENTER", 0, 0)
+                    model:SetFrameLevel(btn:GetFrameLevel() + 2)
+                    model:SetUnit("player")
+                    if model.SetPortraitZoom then model:SetPortraitZoom(1) end
+                    btn.PlayerModel = model
+                else
+                    btn.PlayerModel:SetUnit("player")
+                    if btn.PlayerModel.SetPortraitZoom then btn.PlayerModel:SetPortraitZoom(1) end
+                    btn.PlayerModel:Show()
+                end
+                btn.Icon:Hide()
+            else
+                if btn.PlayerModel then btn.PlayerModel:Hide() end
+                btn.Icon:Show()
+                if plugin.icon then
+                    btn.Icon:SetTexture(plugin.icon)
+                end
             end
+            
             btn:Show()
             
             -- Position side tabs vertically stacked along the right frame edge
@@ -220,7 +248,6 @@ function TabManager:UpdateTabHighlights()
         if btn and btn:IsShown() then
             local isSelected = (btn.pluginId == activeId)
             
-            -- Re-calculate horizontal offset: active tab shifts slightly right to pop out
             btn:ClearAllPoints()
             local xOffset = isSelected and 2 or -2
             
@@ -231,10 +258,10 @@ function TabManager:UpdateTabHighlights()
             end
             
             if isSelected then
-                btn.Icon:SetVertexColor(1.0, 1.0, 1.0, 1.0)
+                if btn.Icon then btn.Icon:SetVertexColor(1.0, 1.0, 1.0, 1.0) end
                 if btn.ActiveGlow then btn.ActiveGlow:Show() end
             else
-                btn.Icon:SetVertexColor(0.7, 0.7, 0.7, 1.0)
+                if btn.Icon then btn.Icon:SetVertexColor(0.7, 0.7, 0.7, 1.0) end
                 if btn.ActiveGlow then btn.ActiveGlow:Hide() end
             end
         end
@@ -247,7 +274,10 @@ end
 
 local eventFrame = CreateFrame("Frame", "OnePanel_TabManager_EventFrame")
 eventFrame:RegisterEvent("PLAYER_LOGIN")
-eventFrame:SetScript("OnEvent", function(self, event)
+eventFrame:RegisterEvent("UNIT_MODEL_CHANGED")
+
+eventFrame:SetScript("OnEvent", function(self, event, unit)
+    if event == "UNIT_MODEL_CHANGED" and unit ~= "player" then return end
     if OnePanel.frame then
         TabManager:RefreshTabs()
     end

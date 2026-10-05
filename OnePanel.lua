@@ -1,6 +1,6 @@
 --[[
     OnePanel - OnePanel.lua
-    Master host frame shell, container canvas, plugin registration API, and slash commands.
+    Master host frame shell, dynamic title bar, class header symbol, and plugin registry.
 --]]
 
 local addonName, addonTable = ...
@@ -14,6 +14,20 @@ OnePanel.pluginOrder = {}
 OnePanel.activePluginId = nil
 
 local Utils = _G.OnePanelUtils
+
+-------------------------------------------------------------------------------
+-- Dynamic Title Bar API
+-------------------------------------------------------------------------------
+
+--- Dynamically set the main window title header
+-- @param titleText string: Title text to display
+function OnePanel:SetTitleText(titleText)
+    if self.frame and self.frame.Title then
+        local name = UnitName("player") or "Player"
+        local displayTitle = titleText and (name .. " - " .. titleText) or ("OnePanel Suite")
+        self.frame.Title:SetText("|cff00ccff" .. displayTitle .. "|r")
+    end
+end
 
 -------------------------------------------------------------------------------
 -- Host Canvas Frame Initialization
@@ -49,15 +63,29 @@ local function CreateMasterFrame()
             "Interface\\DialogFrame\\UI-DialogBox-Border",
             32, 32, { left = 11, right = 12, top = 12, bottom = 11 }
         )
-        Utils.FrameHelper:AttachTitleBar(frame, "OnePanel Suite")
         Utils.FrameHelper:RegisterEscClose("OnePanelFrame")
     end
     
-    -- Header / Title Bar Decoration
+    -- Dynamic Title Header FontString
     local headerText = frame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
     headerText:SetPoint("TOPLEFT", frame, "TOPLEFT", 24, -18)
     headerText:SetText("|cff00ccffOnePanel|r")
     frame.Title = headerText
+    
+    -- Top Right Circular Class Symbol Icon
+    local classIcon = frame:CreateTexture(nil, "ARTWORK")
+    classIcon:SetSize(28, 28)
+    classIcon:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -44, -12)
+    if Utils and Utils.FrameHelper then
+        Utils.FrameHelper:SetClassIcon(classIcon)
+    end
+    frame.ClassIcon = classIcon
+    
+    local classRing = frame:CreateTexture(nil, "OVERLAY")
+    classRing:SetSize(34, 34)
+    classRing:SetPoint("CENTER", classIcon, "CENTER", 0, 0)
+    classRing:SetTexture("Interface\\Minimap\\MiniMap-TrackingBorder")
+    frame.ClassRing = classRing
     
     -- Close Button
     local closeBtn = CreateFrame("Button", "OnePanelFrameCloseButton", frame, "UIPanelCloseButton")
@@ -92,32 +120,15 @@ end
 --- Register a plugin module with OnePanel master host
 -- @param config table: Plugin configuration schema
 function OnePanel:RegisterPlugin(config)
-    if not config or type(config) ~= "table" then
-        if Utils and Utils.Logger then
-            Utils.Logger:Log("OnePanel", "ERROR", "RegisterPlugin failed: Invalid config table")
-        end
-        return false
-    end
+    if not config or type(config) ~= "table" then return false end
     
     local id = config.id or config.title
-    if not id or type(id) ~= "string" then
-        if Utils and Utils.Logger then
-            Utils.Logger:Log("OnePanel", "ERROR", "RegisterPlugin failed: Plugin missing 'id'")
-        end
-        return false
-    end
-    
-    if type(config.CreateView) ~= "function" then
-        if Utils and Utils.Logger then
-            Utils.Logger:Log("OnePanel", "ERROR", "RegisterPlugin failed: Plugin '" .. id .. "' missing 'CreateView' callback")
-        end
-        return false
-    end
+    if not id or type(id) ~= "string" then return false end
+    if type(config.CreateView) ~= "function" then return false end
     
     config.order = config.order or 100
     OnePanel.plugins[id] = config
     
-    -- Maintain ordered list of plugin IDs
     local exists = false
     for _, existingId in ipairs(OnePanel.pluginOrder) do
         if existingId == id then
@@ -129,18 +140,12 @@ function OnePanel:RegisterPlugin(config)
         table.insert(OnePanel.pluginOrder, id)
     end
     
-    -- Sort plugins by order field
     table.sort(OnePanel.pluginOrder, function(a, b)
         local pA = OnePanel.plugins[a]
         local pB = OnePanel.plugins[b]
         return (pA and pA.order or 100) < (pB and pB.order or 100)
     end)
     
-    if Utils and Utils.Logger then
-        Utils.Logger:Log("OnePanel", "INFO", "Plugin registered: " .. id .. " (" .. (config.title or id) .. ")")
-    end
-    
-    -- Refresh tab strip if TabManager is active
     if OnePanel.TabManager and OnePanel.TabManager.RefreshTabs then
         OnePanel.TabManager:RefreshTabs()
     end
@@ -153,92 +158,6 @@ function OnePanel:RegisterPlugin(config)
 end
 
 -------------------------------------------------------------------------------
--- Phase 2 Default Test Plugins
--------------------------------------------------------------------------------
-
-local function RegisterTestPlugins()
-    -- 1. Test Character Sheet Plugin
-    OnePanel:RegisterPlugin({
-        id = "Character",
-        title = "Character",
-        order = 10,
-        icon = "Interface\\Icons\\INV_Chest_Chain_05",
-        CreateView = function(parentFrame)
-            local container = CreateFrame("Frame", "OnePanel_TestCharacterView", parentFrame)
-            container:SetAllPoints(parentFrame)
-            
-            -- Title text
-            local title = container:CreateFontString(nil, "OVERLAY", "GameFontNormalHuge")
-            title:SetPoint("TOP", container, "TOP", 0, -60)
-            title:SetText("|cff00ccffCharacter Sheet|r")
-            
-            -- Placeholder Notice
-            local desc = container:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
-            desc:SetPoint("TOP", title, "BOTTOM", 0, -20)
-            desc:SetText("[Phase 2 Test View]\nPlaceholder View for Character Equipment & Stats.")
-            
-            -- Icon display
-            local icon = container:CreateTexture(nil, "ARTWORK")
-            icon:SetSize(64, 64)
-            icon:SetPoint("CENTER", container, "CENTER", 0, 10)
-            icon:SetTexture("Interface\\Icons\\INV_Chest_Chain_05")
-            
-            return container
-        end,
-        OnShow = function(container)
-            if Utils and Utils.Logger then
-                Utils.Logger:Log("CharacterView", "DEBUG", "Test Character view shown")
-            end
-        end,
-        OnHide = function(container)
-            if Utils and Utils.Logger then
-                Utils.Logger:Log("CharacterView", "DEBUG", "Test Character view hidden")
-            end
-        end
-    })
-    
-    -- 2. Test Professions Plugin
-    OnePanel:RegisterPlugin({
-        id = "Professions",
-        title = "Professions",
-        order = 20,
-        icon = "Interface\\Icons\\Trade_Tailoring",
-        CreateView = function(parentFrame)
-            local container = CreateFrame("Frame", "OnePanel_TestProfessionsView", parentFrame)
-            container:SetAllPoints(parentFrame)
-            
-            -- Title text
-            local title = container:CreateFontString(nil, "OVERLAY", "GameFontNormalHuge")
-            title:SetPoint("TOP", container, "TOP", 0, -60)
-            title:SetText("|cffffcc00Professions|r")
-            
-            -- Placeholder Notice
-            local desc = container:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
-            desc:SetPoint("TOP", title, "BOTTOM", 0, -20)
-            desc:SetText("[Phase 2 Test View]\nPlaceholder View for Crafting & Gathering Interfaces.")
-            
-            -- Icon display
-            local icon = container:CreateTexture(nil, "ARTWORK")
-            icon:SetSize(64, 64)
-            icon:SetPoint("CENTER", container, "CENTER", 0, 10)
-            icon:SetTexture("Interface\\Icons\\Trade_Tailoring")
-            
-            return container
-        end,
-        OnShow = function(container)
-            if Utils and Utils.Logger then
-                Utils.Logger:Log("ProfessionsView", "DEBUG", "Test Professions view shown")
-            end
-        end,
-        OnHide = function(container)
-            if Utils and Utils.Logger then
-                Utils.Logger:Log("ProfessionsView", "DEBUG", "Test Professions view hidden")
-            end
-        end
-    })
-end
-
--------------------------------------------------------------------------------
 -- Window Visibility & Toggle API
 -------------------------------------------------------------------------------
 
@@ -246,7 +165,6 @@ function OnePanel:Show()
     local frame = CreateMasterFrame()
     frame:Show()
     
-    -- Select first tab if none is active
     if not OnePanel.activePluginId and #OnePanel.pluginOrder > 0 then
         if OnePanel.TabManager then
             OnePanel.TabManager:SelectTab(OnePanel.pluginOrder[1])
@@ -283,7 +201,6 @@ eventFrame:SetScript("OnEvent", function(self, event, arg1)
         self:UnregisterEvent("ADDON_LOADED")
     elseif event == "PLAYER_LOGIN" then
         CreateMasterFrame()
-        RegisterTestPlugins()
         
         if Utils and Utils.Logger then
             Utils.Logger:Log("OnePanel", "INFO", "OnePanel Host Shell v" .. OnePanel.version .. " loaded.")
