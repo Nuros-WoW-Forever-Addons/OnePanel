@@ -229,6 +229,146 @@ function OnePanel:Toggle()
 end
 
 -------------------------------------------------------------------------------
+-- Interactive GUI Builder Tool for Portrait & Ring Positioning/Scaling
+-------------------------------------------------------------------------------
+
+--- Toggle or enable the in-game GUI Builder tool for dragging and resizing portrait & ring
+-- @param enable boolean|nil: True to enable, False to disable, nil to toggle
+function OnePanel:EnableGUIBuilder(enable)
+    local frame = CreateMasterFrame()
+    if not frame then return end
+    
+    if enable == nil then
+        self.guiBuilderEnabled = not self.guiBuilderEnabled
+    else
+        self.guiBuilderEnabled = enable
+    end
+    
+    if not self.guiAdjusterFrame then
+        local adj = CreateFrame("Frame", "OnePanel_GUIAdjusterFrame", frame)
+        adj:SetFrameStrata("TOOLTIP")
+        adj:EnableMouse(true)
+        adj:SetMovable(true)
+        adj:EnableMouseWheel(true)
+        adj:RegisterForDrag("LeftButton")
+        
+        local hl = adj:CreateTexture(nil, "OVERLAY")
+        hl:SetAllPoints(adj)
+        hl:SetColorTexture(0, 1, 0, 0.25)
+        adj.Highlight = hl
+        
+        local infoText = frame:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+        infoText:SetPoint("BOTTOMLEFT", frame, "TOPLEFT", 0, 8)
+        infoText:SetText("|cffffd100[GUI Builder Active]|r Drag = Position | Wheel = Ring Size | Shift+Wheel = Icon Size")
+        adj.InfoText = infoText
+        
+        adj.ringX = 0
+        adj.ringY = 0
+        adj.ringSize = 96
+        adj.iconSize = 60
+        adj.iconOffsetX = 0
+        adj.iconOffsetY = 0
+        
+        local function UpdateLayout()
+            frame.PortraitRing:SetSize(adj.ringSize, adj.ringSize)
+            frame.PortraitRing:ClearAllPoints()
+            frame.PortraitRing:SetPoint("CENTER", frame, "TOPLEFT", adj.ringX, adj.ringY)
+            
+            frame.PortraitIcon:SetSize(adj.iconSize, adj.iconSize)
+            frame.PortraitIcon:ClearAllPoints()
+            frame.PortraitIcon:SetPoint("CENTER", frame.PortraitRing, "CENTER", adj.iconOffsetX, adj.iconOffsetY)
+            
+            adj:ClearAllPoints()
+            adj:SetSize(math.max(adj.ringSize, adj.iconSize), math.max(adj.ringSize, adj.iconSize))
+            adj:SetPoint("CENTER", frame.PortraitRing, "CENTER", 0, 0)
+            
+            local logMsg = string.format(
+                "Ring: Size(%d, %d) Point('CENTER', frame, 'TOPLEFT', %d, %d) | Icon: Size(%d, %d) Point('CENTER', ring, 'CENTER', %d, %d)",
+                adj.ringSize, adj.ringSize, adj.ringX, adj.ringY,
+                adj.iconSize, adj.iconSize, adj.iconOffsetX, adj.iconOffsetY
+            )
+            adj.InfoText:SetText("|cffffd100[GUI Builder]|r " .. logMsg)
+            
+            if Utils and Utils.Logger then
+                Utils.Logger:Log("GUI_BUILDER", "INFO", logMsg)
+            end
+        end
+        adj.UpdateLayout = UpdateLayout
+        
+        adj:SetScript("OnDragStart", function(self)
+            self.isDragging = true
+            local curX, curY = GetCursorPosition()
+            local uiScale = UIParent:GetEffectiveScale()
+            self.startX = curX / uiScale
+            self.startY = curY / uiScale
+            self.origRingX = self.ringX
+            self.origRingY = self.ringY
+        end)
+        
+        adj:SetScript("OnDragStop", function(self)
+            self.isDragging = false
+            if DEFAULT_CHAT_FRAME then
+                DEFAULT_CHAT_FRAME:AddMessage("|cffffd100[OnePanel GUI Builder]|r " .. self.InfoText:GetText())
+            end
+        end)
+        
+        adj:SetScript("OnUpdate", function(self)
+            if self.isDragging then
+                local curX, curY = GetCursorPosition()
+                local uiScale = UIParent:GetEffectiveScale()
+                local diffX = (curX / uiScale) - self.startX
+                local diffY = (curY / uiScale) - self.startY
+                self.ringX = math.floor(self.origRingX + diffX + 0.5)
+                self.ringY = math.floor(self.origRingY + diffY + 0.5)
+                self:UpdateLayout()
+            end
+        end)
+        
+        adj:SetScript("OnMouseWheel", function(self, delta)
+            if IsShiftKeyDown() then
+                self.iconSize = math.max(16, self.iconSize + (delta * 2))
+            elseif IsAltKeyDown() then
+                self.iconOffsetY = self.iconOffsetY + (delta * 2)
+            elseif IsControlKeyDown() then
+                self.iconOffsetX = self.iconOffsetX + (delta * 2)
+            else
+                self.ringSize = math.max(20, self.ringSize + (delta * 2))
+            end
+            self:UpdateLayout()
+            if DEFAULT_CHAT_FRAME then
+                DEFAULT_CHAT_FRAME:AddMessage("|cffffd100[OnePanel GUI Builder]|r " .. self.InfoText:GetText())
+            end
+        end)
+        
+        self.guiAdjusterFrame = adj
+    end
+    
+    if self.guiBuilderEnabled then
+        frame:Show()
+        self.guiAdjusterFrame:Show()
+        self.guiAdjusterFrame.InfoText:Show()
+        self.guiAdjusterFrame:UpdateLayout()
+        if DEFAULT_CHAT_FRAME then
+            DEFAULT_CHAT_FRAME:AddMessage("|cff00ff00[OnePanel GUI Builder ENABLED]|r")
+            DEFAULT_CHAT_FRAME:AddMessage("|cffffffff• Left-Click & Drag: Move Ring & Icon|r")
+            DEFAULT_CHAT_FRAME:AddMessage("|cffffffff• Mouse Wheel: Resize Ring Size|r")
+            DEFAULT_CHAT_FRAME:AddMessage("|cffffffff• Shift + Mouse Wheel: Resize Icon Size|r")
+            DEFAULT_CHAT_FRAME:AddMessage("|cffffffff• Alt + Mouse Wheel: Adjust Icon Y-Offset|r")
+            DEFAULT_CHAT_FRAME:AddMessage("|cffffffff• Ctrl + Mouse Wheel: Adjust Icon X-Offset|r")
+            DEFAULT_CHAT_FRAME:AddMessage("|cffffffffType /opgui again to toggle off.|r")
+        end
+    else
+        if self.guiAdjusterFrame then
+            self.guiAdjusterFrame:Hide()
+            self.guiAdjusterFrame.InfoText:Hide()
+        end
+        if DEFAULT_CHAT_FRAME then
+            DEFAULT_CHAT_FRAME:AddMessage("|cffff0000[OnePanel GUI Builder DISABLED]|r")
+        end
+    end
+end
+
+-------------------------------------------------------------------------------
 -- Event Handling & Slash Commands
 -------------------------------------------------------------------------------
 
@@ -256,4 +396,11 @@ SLASH_ONEPANEL1 = "/onepanel"
 SLASH_ONEPANEL2 = "/op"
 SlashCmdList["ONEPANEL"] = function(msg)
     OnePanel:Toggle()
+end
+
+-- GUI Builder Command: /opgui or /onepanelgui
+SLASH_ONEPANELGUI1 = "/opgui"
+SLASH_ONEPANELGUI2 = "/onepanelgui"
+SlashCmdList["ONEPANELGUI"] = function(msg)
+    OnePanel:EnableGUIBuilder()
 end
