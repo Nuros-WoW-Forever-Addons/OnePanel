@@ -39,7 +39,6 @@ function OnePanel:SetPanelExpanded(expanded)
         local targetWidth = self.isExpanded and 832 or 520
         self.frame:SetWidth(targetWidth)
         
-        -- Fire event for plugins to show/hide sub-panels
         if Utils and Utils.EventBus then
             Utils.EventBus:Trigger("ONEPANEL_EXPAND_STATE_CHANGED", self.isExpanded)
         end
@@ -89,17 +88,17 @@ local function CreateMasterFrame()
     headerText:SetText("|cffffffff" .. (UnitName("player") or "Player") .. "|r")
     frame.Title = headerText
     
-    -- Top-Left Scaled Circular Class/Player Portrait Icon (Overlapping top-left corner)
+    -- Top-Left Scaled Circular Class/Player Portrait Icon (Positioned cleanly on top-left corner)
     local classIcon = frame:CreateTexture(nil, "ARTWORK")
-    classIcon:SetSize(54, 54)
-    classIcon:SetPoint("TOPLEFT", frame, "TOPLEFT", -12, 12)
+    classIcon:SetSize(48, 48)
+    classIcon:SetPoint("TOPLEFT", frame, "TOPLEFT", -6, 6)
     if Utils and Utils.FrameHelper then
         Utils.FrameHelper:SetClassIcon(classIcon)
     end
     frame.ClassIcon = classIcon
     
     local classRing = frame:CreateTexture(nil, "OVERLAY")
-    classRing:SetSize(68, 68)
+    classRing:SetSize(62, 62)
     classRing:SetPoint("CENTER", classIcon, "CENTER", 0, 0)
     classRing:SetTexture("Interface\\Minimap\\MiniMap-TrackingBorder")
     frame.ClassRing = classRing
@@ -112,16 +111,10 @@ local function CreateMasterFrame()
     end)
     frame.CloseButton = closeBtn
     
-    -- Inner Content Display Area (Container for Plugin Views with Subdued Dark Background)
+    -- Inner Content Display Area (Container for Plugin Views)
     local contentArea = CreateFrame("Frame", "OnePanelContentArea", frame)
     contentArea:SetPoint("TOPLEFT", frame, "TOPLEFT", 18, -45)
     contentArea:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -18, 18)
-    
-    -- Subdued dark backdrop art
-    local bg = contentArea:CreateTexture(nil, "BACKGROUND")
-    bg:SetAllPoints(contentArea)
-    bg:SetTexture("Interface\\FrameGeneral\\UI-Background-Marble")
-    bg:SetVertexColor(0.2, 0.2, 0.2, 1.0)
     
     if Utils and Utils.FrameHelper then
         Utils.FrameHelper:ApplyBackdrop(contentArea,
