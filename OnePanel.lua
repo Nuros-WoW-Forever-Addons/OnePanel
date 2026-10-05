@@ -46,6 +46,10 @@ function OnePanel:SetPanelExpanded(expanded)
         local targetWidth = self.isExpanded and 832 or 520
         self.frame:SetWidth(targetWidth)
         
+        if self.frame.RightSideToggleButton then
+            self.frame.RightSideToggleButton:UpdateIcon()
+        end
+        
         if Utils and Utils.EventBus then
             Utils.EventBus:Trigger("ONEPANEL_EXPAND_STATE_CHANGED", self.isExpanded)
         end
@@ -139,7 +143,45 @@ local function CreateMasterFrame()
         )
     end
     frame.ContentArea = contentArea
+    -- Native Right-Side Collapse / Expand Toggle Button
+    local toggleBtn = CreateFrame("Button", "OnePanel_RightSideToggleButton", frame)
+    toggleBtn:SetSize(22, 22)
+    toggleBtn:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -4, -6)
+    toggleBtn:SetFrameLevel(frame:GetFrameLevel() + 20)
     
+    local toggleIcon = toggleBtn:CreateTexture(nil, "ARTWORK")
+    toggleIcon:SetAllPoints(toggleBtn)
+    toggleIcon:SetTexture("Interface\\Buttons\\UI-SpellbookSearch-DrillDown")
+    toggleBtn.Icon = toggleIcon
+    
+    local toggleHilight = toggleBtn:CreateTexture(nil, "HIGHLIGHT")
+    toggleHilight:SetTexture("Interface\\Buttons\\UI-Common-MouseHilight")
+    toggleHilight:SetBlendMode("ADD")
+    toggleHilight:SetAllPoints(toggleBtn)
+    
+    local function UpdateToggleIcon()
+        if OnePanel.isExpanded then
+            toggleIcon:SetTexCoord(0, 1, 0, 1)
+        else
+            toggleIcon:SetTexCoord(1, 0, 0, 1)
+        end
+    end
+    toggleBtn.UpdateIcon = UpdateToggleIcon
+    UpdateToggleIcon()
+    
+    toggleBtn:SetScript("OnClick", function()
+        OnePanel:SetPanelExpanded(not OnePanel.isExpanded)
+    end)
+    
+    toggleBtn:SetScript("OnEnter", function(self)
+        GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+        GameTooltip:SetText(OnePanel.isExpanded and "Collapse Side Panel" or "Expand Side Panel", 1, 1, 1)
+        GameTooltip:Show()
+    end)
+    toggleBtn:SetScript("OnLeave", function() GameTooltip_Hide() end)
+    
+    frame.RightSideToggleButton = toggleBtn
+
     return frame
 end
 

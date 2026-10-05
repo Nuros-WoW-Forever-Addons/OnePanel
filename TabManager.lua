@@ -1,6 +1,7 @@
 --[[
     OnePanel - TabManager.lua
     Right-side vertical tab controller, 3D tab portraits, dynamic titles, and view swapper.
+    Styling matches native Blizzard CharacterFrameModeTab buttons.
 --]]
 
 local addonName, addonTable = ...
@@ -11,6 +12,21 @@ OnePanel.TabManager = TabManager
 TabManager.tabButtons = {}
 
 local Utils = _G.OnePanelUtils
+
+-------------------------------------------------------------------------------
+-- Atlas / Texture Helper
+-------------------------------------------------------------------------------
+
+local function ApplyTabAtlasOrTexture(texObj, atlasName, fallbackPath)
+    if not texObj then return end
+    local set = false
+    if texObj.SetAtlas then
+        set = pcall(function() texObj:SetAtlas(atlasName, true) end)
+    end
+    if not set or not texObj:GetTexture() then
+        texObj:SetTexture(fallbackPath)
+    end
+end
 
 -------------------------------------------------------------------------------
 -- Right-Side Vertical Tab Button Construction
@@ -25,36 +41,35 @@ local function CreateSideTabButton(index, pluginId)
     local buttonName = "OnePanelSideTab" .. index
     
     local tab = CreateFrame("Button", buttonName, parentFrame)
-    tab:SetSize(36, 36)
+    tab:SetSize(34, 36)
     tab:SetID(index)
     tab.pluginId = pluginId
     
-    -- Outer Border Texture (SpellBook-SkillLineTab style)
-    local border = tab:CreateTexture(buttonName .. "Border", "BACKGROUND")
-    border:SetTexture("Interface\\SpellBook\\SpellBook-SkillLineTab")
-    border:SetSize(64, 64)
-    border:SetPoint("TOPLEFT", tab, "TOPLEFT", -3, 11)
-    tab.Border = border
+    -- Background Texture (common-sidetab-bg atlas or fallback)
+    local bg = tab:CreateTexture(buttonName .. "Background", "BACKGROUND")
+    ApplyTabAtlasOrTexture(bg, "common-sidetab-bg", "Interface\\SpellBook\\SpellBook-SkillLineTab")
+    bg:SetAllPoints(tab)
+    tab.Background = bg
     
     -- Main Icon Texture
     local icon = tab:CreateTexture(buttonName .. "Icon", "ARTWORK")
-    icon:SetSize(30, 30)
-    icon:SetPoint("CENTER", tab, "CENTER", 0, 0)
+    icon:SetSize(24, 24)
+    icon:SetPoint("CENTER", tab, "CENTER", -1, 0)
     icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
     tab.Icon = icon
     
-    -- Highlight Texture (Square hover glow)
+    -- Highlight Texture (common-sidetab-hover atlas or fallback)
     local highlight = tab:CreateTexture(buttonName .. "Highlight", "HIGHLIGHT")
-    highlight:SetTexture("Interface\\Buttons\\ButtonHilight-Square")
+    ApplyTabAtlasOrTexture(highlight, "common-sidetab-hover", "Interface\\Buttons\\ButtonHilight-Square")
     highlight:SetBlendMode("ADD")
-    highlight:SetAllPoints(icon)
+    highlight:SetAllPoints(tab)
     tab.Highlight = highlight
     
-    -- Active / Checked Glow Texture
+    -- Active / Selected Overlay (common-sidetab-cover atlas or fallback)
     local activeGlow = tab:CreateTexture(buttonName .. "ActiveGlow", "OVERLAY")
-    activeGlow:SetTexture("Interface\\Buttons\\CheckButtonHilight")
+    ApplyTabAtlasOrTexture(activeGlow, "common-sidetab-cover", "Interface\\Buttons\\CheckButtonHilight")
     activeGlow:SetBlendMode("ADD")
-    activeGlow:SetAllPoints(icon)
+    activeGlow:SetAllPoints(tab)
     activeGlow:Hide()
     tab.ActiveGlow = activeGlow
     
@@ -197,8 +212,8 @@ function TabManager:RefreshTabs()
             if plugin.use3DPortrait or pluginId == "Character" then
                 if not btn.PlayerModel then
                     local model = CreateFrame("PlayerModel", btn:GetName() .. "3DPortrait", btn)
-                    model:SetSize(28, 28)
-                    model:SetPoint("CENTER", btn, "CENTER", 0, 0)
+                    model:SetSize(24, 24)
+                    model:SetPoint("CENTER", btn, "CENTER", -1, 0)
                     model:SetFrameLevel(btn:GetFrameLevel() + 2)
                     model:SetUnit("player")
                     if model.SetPortraitZoom then model:SetPortraitZoom(1) end
@@ -218,14 +233,6 @@ function TabManager:RefreshTabs()
             end
             
             btn:Show()
-            
-            -- Position side tabs vertically stacked along the right frame edge
-            btn:ClearAllPoints()
-            if i == 1 then
-                btn:SetPoint("TOPLEFT", frame, "TOPRIGHT", -2, -36)
-            else
-                btn:SetPoint("TOPLEFT", self.tabButtons[i - 1], "BOTTOMLEFT", 0, -12)
-            end
         end
     end
     
@@ -243,6 +250,7 @@ end
 function TabManager:UpdateTabHighlights()
     local activeId = OnePanel.activePluginId
     local frame = OnePanel.frame
+    if not frame then return end
     
     for i, btn in ipairs(self.tabButtons) do
         if btn and btn:IsShown() then
@@ -252,9 +260,9 @@ function TabManager:UpdateTabHighlights()
             local xOffset = isSelected and 2 or -2
             
             if i == 1 then
-                btn:SetPoint("TOPLEFT", frame, "TOPRIGHT", xOffset, -36)
+                btn:SetPoint("TOPLEFT", frame, "TOPRIGHT", xOffset, -48)
             else
-                btn:SetPoint("TOPLEFT", self.tabButtons[i - 1], "BOTTOMLEFT", (isSelected and 4 or 0), -12)
+                btn:SetPoint("TOPLEFT", self.tabButtons[i - 1], "BOTTOMLEFT", 0, -8)
             end
             
             if isSelected then
