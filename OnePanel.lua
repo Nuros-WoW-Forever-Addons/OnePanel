@@ -39,11 +39,11 @@ function OnePanel:SetTitleText(titleText)
 end
 
 --- Collapse or Expand the master window frame width
--- @param expanded boolean: True to expand (832px), False to collapse (520px)
+-- @param expanded boolean: True to expand (580px), False to collapse (370px)
 function OnePanel:SetPanelExpanded(expanded)
     self.isExpanded = (expanded ~= false)
     if self.frame then
-        local targetWidth = self.isExpanded and 832 or 520
+        local targetWidth = self.isExpanded and 580 or 370
         self.frame:SetWidth(targetWidth)
         
         if self.frame.RightSideToggleButton then
@@ -100,7 +100,7 @@ local function CreateMasterFrame()
     
     -- Main Window Container using native Blizzard PortraitFrameTemplate
     local frame = CreateFrame("Frame", "OnePanelFrame", UIParent, "PortraitFrameTemplate")
-    frame:SetSize(832, 580)
+    frame:SetSize(580, 475)
     frame:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
     frame:SetFrameStrata("HIGH")
     frame:SetToplevel(true)
