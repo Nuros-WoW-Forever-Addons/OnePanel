@@ -52,29 +52,29 @@ local function CreateSideTabButton(index, pluginId)
     tab:SetID(index)
     tab.pluginId = pluginId
     
-    -- Background Texture (common-sidetab-bg atlas or fallback)
+    -- Background Texture (common-sidetab atlas)
     local bg = tab:CreateTexture(buttonName .. "Background", "BACKGROUND")
-    ApplyTabAtlasOrTexture(bg, "common-sidetab-bg", "Interface\\SpellBook\\SpellBook-SkillLineTab")
+    ApplyTabAtlasOrTexture(bg, "common-sidetab", "Interface\\SpellBook\\SpellBook-SkillLineTab")
     bg:SetAllPoints(tab)
     tab.Background = bg
     
     -- Main Icon Texture
     local icon = tab:CreateTexture(buttonName .. "Icon", "ARTWORK")
-    icon:SetSize(36, 36)
-    icon:SetPoint("CENTER", tab, "CENTER", -1, 0)
+    icon:SetSize(30, 30)
+    icon:SetPoint("CENTER", tab, "CENTER", 0, 0)
     icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
     tab.Icon = icon
     
-    -- Highlight Texture (common-sidetab-hover atlas or fallback)
+    -- Highlight Texture (common-sidetab-hover atlas)
     local highlight = tab:CreateTexture(buttonName .. "Highlight", "HIGHLIGHT")
     ApplyTabAtlasOrTexture(highlight, "common-sidetab-hover", "Interface\\Buttons\\ButtonHilight-Square")
     highlight:SetBlendMode("ADD")
     highlight:SetAllPoints(tab)
     tab.Highlight = highlight
     
-    -- Active / Selected Overlay (common-sidetab-cover atlas or fallback)
+    -- Active / Selected Overlay (common-sidetab-selected atlas)
     local activeGlow = tab:CreateTexture(buttonName .. "ActiveGlow", "OVERLAY")
-    ApplyTabAtlasOrTexture(activeGlow, "common-sidetab-cover", "Interface\\Buttons\\CheckButtonHilight")
+    ApplyTabAtlasOrTexture(activeGlow, "common-sidetab-selected", "Interface\\Buttons\\CheckButtonHilight")
     activeGlow:SetBlendMode("ADD")
     activeGlow:SetAllPoints(tab)
     activeGlow:Hide()
@@ -219,13 +219,15 @@ function TabManager:RefreshTabs()
             if plugin.use3DPortrait or pluginId == "Character" then
                 if not btn.PlayerModel then
                     local model = CreateFrame("PlayerModel", btn:GetName() .. "3DPortrait", btn)
-                    model:SetSize(36, 36)
-                    model:SetPoint("CENTER", btn, "CENTER", -1, 0)
+                    model:SetSize(30, 30)
+                    model:SetPoint("CENTER", btn, "CENTER", 0, 0)
                     model:SetFrameLevel(btn:GetFrameLevel() + 2)
                     model:SetUnit("player")
                     if model.SetPortraitZoom then model:SetPortraitZoom(1) end
                     btn.PlayerModel = model
                 else
+                    btn.PlayerModel:SetSize(30, 30)
+                    btn.PlayerModel:SetPoint("CENTER", btn, "CENTER", 0, 0)
                     btn.PlayerModel:SetUnit("player")
                     if btn.PlayerModel.SetPortraitZoom then btn.PlayerModel:SetPortraitZoom(1) end
                     btn.PlayerModel:Show()
@@ -264,7 +266,7 @@ function TabManager:UpdateTabHighlights()
             local isSelected = (btn.pluginId == activeId)
             
             btn:ClearAllPoints()
-            local xOffset = isSelected and 2 or -2
+            local xOffset = isSelected and 0 or -2
             
             if i == 1 then
                 btn:SetPoint("TOPLEFT", modeTabsFrame, "TOPLEFT", xOffset, 0)
