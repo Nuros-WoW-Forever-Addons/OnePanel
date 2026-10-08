@@ -33,12 +33,16 @@ local THEME_PRESETS = {
         brW = 46, brH = 52, brX = 1, brY = -5,
         
         -- TopEdge
-        teT = 123, teB = 133,
+        teT = 124, teB = 133,
         teH = 11, teY = -12, teLeftX = 0, teRightX = 0,
         
         -- Header Divider (Bottom of double top header)
-        hdT = 148, hdB = 157,
+        hdT = 149, hdB = 157,
         hdH = 9, hdY = -32, hdLeftX = 0, hdRightX = 0,
+        
+        -- Vertical Divider (between main panel and side panel)
+        vdL = 258, vdR = 265,
+        vdW = 7, vdX = 1, vdTopY = 10, vdBotY = -14,
         
         -- BottomEdge
         beT = 167, beB = 178,
@@ -87,6 +91,10 @@ local THEME_PRESETS = {
         -- Header Divider (Bottom of double top header)
         hdT = 58, hdB = 70,
         hdH = 12, hdY = -23, hdLeftX = -8, hdRightX = 8,
+        
+        -- Vertical Divider (between main panel and side panel)
+        vdL = 19, vdR = 37,
+        vdW = 9, vdX = 1, vdTopY = 10, vdBotY = -14,
         
         -- BottomEdge
         beT = 71, beB = 89,
@@ -273,6 +281,30 @@ local function ApplyState(frame, s)
         frame.CloseButton:SetPoint("CENTER", b.TopRight, "TOPRIGHT", s.closeX or -14, s.closeY or -14)
         frame.CloseButton:SetFrameLevel(b:GetFrameLevel() + 5)
     end
+    
+    -- 12. Vertical Divider (between main panel and side panel)
+    local vDivider = _G["OnePanel_CharacterVerticalDivider"] or (frame and frame.CharacterVerticalDivider)
+    local leftArea = _G["OnePanel_CharacterLeftArea"]
+    if vDivider and leftArea then
+        vDivider:SetTexture(preset.vertFile)
+        vDivider:SetTexCoord((s.vdL or 258)/vDim, (s.vdR or 265)/vDim, 0, 1)
+        vDivider:SetWidth(s.vdW or 7)
+        vDivider:ClearAllPoints()
+        vDivider:SetPoint("TOP", leftArea, "TOPRIGHT", s.vdX or 1, s.vdTopY or 10)
+        vDivider:SetPoint("BOTTOM", leftArea, "BOTTOMRIGHT", s.vdX or 1, s.vdBotY or -14)
+    end
+    
+    -- 13. Title Text Centering
+    if frame.TitleContainer then
+        frame.TitleContainer:ClearAllPoints()
+        frame.TitleContainer:SetPoint("TOPLEFT", frame, "TOPLEFT", 60, s.teY or -12)
+        frame.TitleContainer:SetPoint("BOTTOMRIGHT", frame, "TOPRIGHT", -38, (s.hdY or -32) + (s.hdH or 9))
+        frame.TitleContainer:SetFrameLevel(b:GetFrameLevel() + 2)
+        if frame.TitleContainer.TitleText then
+            frame.TitleContainer.TitleText:ClearAllPoints()
+            frame.TitleContainer.TitleText:SetPoint("CENTER", frame.TitleContainer, "CENTER", 0, 0)
+        end
+    end
 end
 
 local function GetFormattedCode(theme, s)
@@ -305,6 +337,9 @@ local function GetFormattedCode(theme, s)
         '    -- Header Divider (Bottom of double top header)\n' ..
         '    hdCoords = { 0, 1, %d/%d, %d/%d },\n' ..
         '    hdH = %d, hdY = %d, hdLeftX = %d, hdRightX = %d,\n\n' ..
+        '    -- Vertical Divider (between main panel and side panel)\n' ..
+        '    vdCoords = { %d/%d, %d/%d, 0, 1 },\n' ..
+        '    vdW = %d, vdX = %d, vdTopY = %d, vdBotY = %d,\n\n' ..
         '    -- BottomEdge\n' ..
         '    beCoords = { 0, 1, %d/%d, %d/%d },\n' ..
         '    beH = %d, beY = %d, beLeftX = %d, beRightX = %d,\n\n' ..
@@ -326,6 +361,7 @@ local function GetFormattedCode(theme, s)
         s.brL or 0, cWDim, s.brR or 0, cWDim, s.brT or 0, cHDim, s.brB or 0, cHDim, s.brW or 0, s.brH or 0, s.brX or 0, s.brY or 0,
         s.teT or 0, hDim, s.teB or 0, hDim, s.teH or 0, s.teY or 0, s.teLeftX or 0, s.teRightX or 0,
         s.hdT or 0, hDim, s.hdB or 0, hDim, s.hdH or 0, s.hdY or 0, s.hdLeftX or 0, s.hdRightX or 0,
+        s.vdL or 258, vDim, s.vdR or 265, vDim, s.vdW or 7, s.vdX or 1, s.vdTopY or 10, s.vdBotY or -14,
         s.beT or 0, hDim, s.beB or 0, hDim, s.beH or 0, s.beY or 0, s.beLeftX or 0, s.beRightX or 0,
         s.leL or 0, vDim, s.leR or 0, vDim, s.leW or 0, s.leX or 0, s.leTopY or 0, s.leBotY or 0,
         s.reL or 0, vDim, s.reR or 0, vDim, s.reW or 0, s.reX or 0, s.reTopY or 0, s.reBotY or 0,
@@ -342,6 +378,7 @@ local GEOM_TARGETS = {
     { id = "BotRight",  label = "Bottom-Right",  keys = { "brX", "brY", "brW", "brH" },             names = { "X Offset", "Y Offset", "Width", "Height" } },
     { id = "TopEdge",   label = "Top Edge",      keys = { "teY", "teH", "teLeftX", "teRightX" },   names = { "Y Offset", "Height", "Left X", "Right X" } },
     { id = "HeaderDiv", label = "Header Div",    keys = { "hdY", "hdH", "hdLeftX", "hdRightX" },   names = { "Y Offset", "Height", "Left X", "Right X" } },
+    { id = "VertDiv",   label = "Vert Divider",  keys = { "vdX", "vdW", "vdTopY", "vdBotY" },     names = { "X Offset", "Width", "Top Y", "Bottom Y" } },
     { id = "BotEdge",   label = "Bottom Edge",   keys = { "beY", "beH", "beLeftX", "beRightX" },   names = { "Y Offset", "Height", "Left X", "Right X" } },
     { id = "LeftEdge",  label = "Left Edge",     keys = { "leX", "leW", "leTopY", "leBotY" },     names = { "X Offset", "Width", "Top Y", "Bottom Y" } },
     { id = "RightEdge", label = "Right Edge",    keys = { "reX", "reW", "reTopY", "reBotY" },     names = { "X Offset", "Width", "Top Y", "Bottom Y" } },
@@ -357,6 +394,7 @@ local UV_TARGETS = {
     { id = "BotRight",  label = "BR UV",         keys = { "brL", "brR", "brT", "brB" }, names = { "Left (px)", "Right (px)", "Top (px)", "Bottom (px)" } },
     { id = "TopEdge",   label = "Top Edge UV",   keys = { "teT", "teB" },               names = { "Top (px)", "Bottom (px)" } },
     { id = "HeaderDiv", label = "Header Div UV", keys = { "hdT", "hdB" },               names = { "Top (px)", "Bottom (px)" } },
+    { id = "VertDiv",   label = "Vert Div UV",   keys = { "vdL", "vdR" },               names = { "Left (px)", "Right (px)" } },
     { id = "BotEdge",   label = "Bot Edge UV",   keys = { "beT", "beB" },               names = { "Top (px)", "Bottom (px)" } },
     { id = "LeftEdge",  label = "Left Edge UV",  keys = { "leL", "leR" },               names = { "Left (px)", "Right (px)" } },
     { id = "RightEdge", label = "Right Edge UV", keys = { "reL", "reR" },               names = { "Left (px)", "Right (px)" } },
@@ -366,7 +404,7 @@ local function CreateNudgerFrame()
     if _G["OnePanel_HiResNudgerFrame"] then return _G["OnePanel_HiResNudgerFrame"] end
     
     local nudger = CreateFrame("Frame", "OnePanel_HiResNudgerFrame", UIParent, "DialogBoxFrame")
-    nudger:SetSize(490, 560)
+    nudger:SetSize(490, 580)
     nudger:SetPoint("CENTER", UIParent, "CENTER", 340, 20)
     nudger:SetFrameStrata("TOOLTIP")
     nudger:SetMovable(true)
@@ -375,6 +413,10 @@ local function CreateNudgerFrame()
     nudger:RegisterForDrag("LeftButton")
     nudger:SetScript("OnDragStart", nudger.StartMoving)
     nudger:SetScript("OnDragStop", nudger.StopMovingOrSizing)
+    
+    -- Suppress Blizzard's default DialogBoxFrame Okay button
+    local okayBtn = _G[nudger:GetName() .. "Okay"] or nudger.Okay
+    if okayBtn then okayBtn:Hide() end
     
     -- Title
     local title = nudger:CreateFontString(nil, "OVERLAY", "GameFontHighlightLarge")
@@ -426,10 +468,10 @@ local function CreateNudgerFrame()
         nudger:RefreshControls()
     end)
     
-    -- Target selector buttons container
+    -- Target selector buttons container (4 columns x 3 rows = up to 12 buttons)
     local targetButtonContainer = CreateFrame("Frame", nil, nudger)
     targetButtonContainer:SetPoint("TOPLEFT", nudger, "TOPLEFT", 18, -64)
-    targetButtonContainer:SetSize(454, 52)
+    targetButtonContainer:SetSize(454, 76)
     
     local targetButtons = {}
     
@@ -441,7 +483,8 @@ local function CreateNudgerFrame()
         wipe(targetButtons)
         
         local targets = (activeMode == "Geometry") and GEOM_TARGETS or UV_TARGETS
-        local btnW = 86
+        local cols = 4
+        local btnW = 108
         local btnH = 22
         
         -- Check if currentTarget is valid in this mode
@@ -456,8 +499,8 @@ local function CreateNudgerFrame()
         for idx, t in ipairs(targets) do
             local btn = CreateFrame("Button", nil, targetButtonContainer, "UIPanelButtonTemplate")
             btn:SetSize(btnW, btnH)
-            local row = math.floor((idx - 1) / 5)
-            local col = (idx - 1) % 5
+            local row = math.floor((idx - 1) / cols)
+            local col = (idx - 1) % cols
             btn:SetPoint("TOPLEFT", targetButtonContainer, "TOPLEFT", col * (btnW + 6), -row * (btnH + 4))
             btn:SetText(t.label)
             btn:SetScript("OnClick", function()
@@ -476,9 +519,9 @@ local function CreateNudgerFrame()
         end
     end
     
-    -- 4 Adjustment Rows
+    -- 4 Adjustment Rows (Moved down to -148 to clear 3 rows of target buttons)
     local rows = {}
-    local rowY = -124
+    local rowY = -148
     for i = 1, 4 do
         local rowFrame = CreateFrame("Frame", nil, nudger)
         rowFrame:SetSize(454, 26)
@@ -531,8 +574,8 @@ local function CreateNudgerFrame()
     exportBox:SetScript("OnEscapePressed", function(self) self:ClearFocus() end)
     
     local exportScroll = CreateFrame("ScrollFrame", nil, nudger, "UIPanelScrollFrameTemplate")
-    exportScroll:SetSize(434, 180)
-    exportScroll:SetPoint("TOPLEFT", nudger, "TOPLEFT", 18, -248)
+    exportScroll:SetSize(434, 196)
+    exportScroll:SetPoint("TOPLEFT", nudger, "TOPLEFT", 18, -268)
     exportScroll:SetScrollChild(exportBox)
     
     -- Action buttons at bottom

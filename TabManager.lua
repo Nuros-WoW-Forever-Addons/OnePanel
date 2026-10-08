@@ -180,7 +180,11 @@ function TabManager:SelectTab(pluginId)
     
     -- Update dynamic title bar
     if OnePanel.SetTitleText then
-        OnePanel:SetTitleText(plugin.title or pluginId)
+        if pluginId == "Character" or plugin.usePlayerNameAsTitle then
+            OnePanel:SetTitleText(OnePanel:GetPlayerFullName())
+        else
+            OnePanel:SetTitleText(plugin.title or pluginId)
+        end
     end
     
     self:UpdateTabHighlights()

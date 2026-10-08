@@ -22,12 +22,32 @@ local Utils = _G.OnePanelUtils
 -- Dynamic Title Bar & Window Width API
 -------------------------------------------------------------------------------
 
+--- Return the player's full name (supporting TRP3/MRP RP names, PvP title, or UnitName)
+function OnePanel:GetPlayerFullName()
+    -- 1. Total RP 3
+    if _G.TRP3_API and _G.TRP3_API.register and _G.TRP3_API.register.getPlayerCompleteName then
+        local ok, trpName = pcall(_G.TRP3_API.register.getPlayerCompleteName, true)
+        if ok and trpName and trpName ~= "" then return trpName end
+    end
+    -- 2. MyRolePlay
+    if _G.mrp and _G.mrp.GetPlayerFullName then
+        local ok, mrpName = pcall(function() return _G.mrp:GetPlayerFullName() end)
+        if ok and mrpName and mrpName ~= "" then return mrpName end
+    end
+    -- 3. UnitPVPName (returns "Saulest Nurotic" or title rank)
+    if UnitPVPName then
+        local ok, pvpName = pcall(UnitPVPName, "player")
+        if ok and pvpName and pvpName ~= "" then return pvpName end
+    end
+    -- 4. Native UnitName fallback
+    return UnitName("player") or "Player"
+end
+
 --- Dynamically set the main window title header (centered First & Last name)
 -- @param titleText string: Optional custom title override
 function OnePanel:SetTitleText(titleText)
     if not self.frame then return end
-    local name = UnitName("player") or "Player"
-    local displayTitle = titleText or name
+    local displayTitle = titleText or self:GetPlayerFullName()
     
     if self.frame.SetTitle then
         self.frame:SetTitle(displayTitle)
