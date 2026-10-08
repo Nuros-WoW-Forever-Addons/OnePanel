@@ -77,7 +77,7 @@ local THEME_PRESETS = {
         blW = 23, blH = 25, blX = -11, blY = -8,
         
         -- BottomRight Corner
-        brL = 394, brR = 442, blT = 0, brB = 50,
+        brL = 394, brR = 442, brT = 0, brB = 50,
         brW = 24, brH = 25, brX = 4, brY = -8,
         
         -- TopEdge
@@ -143,21 +143,27 @@ local function ApplyState(frame, s)
     local b = frame.HiResBorder
     if not b then return end
     
-    -- Check if textures need updating for theme
-    local preset = THEME_PRESETS[activeTheme]
-    if b.TopLeft and b.TopLeft:GetTexture() ~= preset.cornersFile then
-        b.TopLeft:SetTexture(preset.cornersFile)
-        b.TopRight:SetTexture(preset.cornersFile)
-        b.BottomLeft:SetTexture(preset.cornersFile)
-        b.BottomRight:SetTexture(preset.cornersFile)
-        b.TopEdge:SetTexture(preset.horizFile)
-        if b.HeaderDivider then b.HeaderDivider:SetTexture(preset.horizFile) end
-        b.BottomEdge:SetTexture(preset.horizFile)
-        b.LeftEdge:SetTexture(preset.vertFile)
-        b.RightEdge:SetTexture(preset.vertFile)
+    -- Ensure HeaderDivider exists on border frame
+    if not b.HeaderDivider then
+        local hd = b:CreateTexture(nil, "OVERLAY", nil, 1)
+        hd:SetHorizTile(true)
+        b.HeaderDivider = hd
     end
     
-    local cDim = (activeTheme == "HiRes") and 256 or 512
+    -- Update textures for theme
+    local preset = THEME_PRESETS[activeTheme]
+    if preset then
+        if b.TopLeft then b.TopLeft:SetTexture(preset.cornersFile) end
+        if b.TopRight then b.TopRight:SetTexture(preset.cornersFile) end
+        if b.BottomLeft then b.BottomLeft:SetTexture(preset.cornersFile) end
+        if b.BottomRight then b.BottomRight:SetTexture(preset.cornersFile) end
+        if b.TopEdge then b.TopEdge:SetTexture(preset.horizFile) end
+        if b.HeaderDivider then b.HeaderDivider:SetTexture(preset.horizFile) end
+        if b.BottomEdge then b.BottomEdge:SetTexture(preset.horizFile) end
+        if b.LeftEdge then b.LeftEdge:SetTexture(preset.vertFile) end
+        if b.RightEdge then b.RightEdge:SetTexture(preset.vertFile) end
+    end
+    
     local cWDim = 512
     local cHDim = (activeTheme == "HiRes") and 256 or 512
     local hDim = (activeTheme == "HiRes") and 128 or 512
@@ -168,86 +174,86 @@ local function ApplyState(frame, s)
     
     -- 1. Top-Left Corner (Portrait Ring)
     if b.TopLeft then
-        b.TopLeft:SetTexCoord(s.tlL/cWDim, s.tlR/cWDim, s.tlT/cHDim, s.tlB/cHDim)
+        b.TopLeft:SetTexCoord((s.tlL or 0)/cWDim, (s.tlR or 0)/cWDim, (s.tlT or 0)/cHDim, (s.tlB or 0)/cHDim)
         b.TopLeft:ClearAllPoints()
-        b.TopLeft:SetPoint("TOPLEFT", frame, "TOPLEFT", s.tlX, s.tlY)
-        b.TopLeft:SetSize(s.tlW, s.tlH)
+        b.TopLeft:SetPoint("TOPLEFT", frame, "TOPLEFT", s.tlX or 0, s.tlY or 0)
+        b.TopLeft:SetSize(s.tlW or 100, s.tlH or 100)
     end
     
     -- 2. Top-Right Corner (Close Box)
     if b.TopRight then
-        b.TopRight:SetTexCoord(s.trL/cWDim, s.trR/cWDim, s.trT/cHDim, s.trB/cHDim)
+        b.TopRight:SetTexCoord((s.trL or 0)/cWDim, (s.trR or 0)/cWDim, (s.trT or 0)/cHDim, (s.trB or 0)/cHDim)
         b.TopRight:ClearAllPoints()
-        b.TopRight:SetPoint("TOPRIGHT", frame, "TOPRIGHT", s.trX, s.trY)
-        b.TopRight:SetSize(s.trW, s.trH)
+        b.TopRight:SetPoint("TOPRIGHT", frame, "TOPRIGHT", s.trX or 0, s.trY or 0)
+        b.TopRight:SetSize(s.trW or 100, s.trH or 100)
     end
     
     -- 3. Bottom-Left Corner
     if b.BottomLeft then
-        b.BottomLeft:SetTexCoord(s.blL/cWDim, s.blR/cWDim, s.blT/cHDim, s.blB/cHDim)
+        b.BottomLeft:SetTexCoord((s.blL or 0)/cWDim, (s.blR or 0)/cWDim, (s.blT or 0)/cHDim, (s.blB or 0)/cHDim)
         b.BottomLeft:ClearAllPoints()
-        b.BottomLeft:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", s.blX, s.blY)
-        b.BottomLeft:SetSize(s.blW, s.blH)
+        b.BottomLeft:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", s.blX or 0, s.blY or 0)
+        b.BottomLeft:SetSize(s.blW or 20, s.blH or 20)
     end
     
     -- 4. Bottom-Right Corner
     if b.BottomRight then
-        b.BottomRight:SetTexCoord(s.brL/cWDim, s.brR/cWDim, s.brT/cHDim, s.brB/cHDim)
+        b.BottomRight:SetTexCoord((s.brL or 0)/cWDim, (s.brR or 0)/cWDim, (s.brT or 0)/cHDim, (s.brB or 0)/cHDim)
         b.BottomRight:ClearAllPoints()
-        b.BottomRight:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", s.brX, s.brY)
-        b.BottomRight:SetSize(s.brW, s.brH)
+        b.BottomRight:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", s.brX or 0, s.brY or 0)
+        b.BottomRight:SetSize(s.brW or 20, s.brH or 20)
     end
     
     -- 5. Top Edge
     if b.TopEdge and b.TopLeft and b.TopRight then
-        b.TopEdge:SetTexCoord(0, 1, s.teT/hDim, s.teB/hDim)
+        b.TopEdge:SetTexCoord(0, 1, (s.teT or 0)/hDim, (s.teB or 0)/hDim)
         b.TopEdge:ClearAllPoints()
-        b.TopEdge:SetPoint("TOPLEFT", b.TopLeft, "TOPRIGHT", s.teLeftX, s.teY)
-        b.TopEdge:SetPoint("TOPRIGHT", b.TopRight, "TOPLEFT", s.teRightX, s.teY)
-        b.TopEdge:SetHeight(s.teH)
+        b.TopEdge:SetPoint("TOPLEFT", b.TopLeft, "TOPRIGHT", s.teLeftX or 0, s.teY or 0)
+        b.TopEdge:SetPoint("TOPRIGHT", b.TopRight, "TOPLEFT", s.teRightX or 0, s.teY or 0)
+        b.TopEdge:SetHeight(s.teH or 10)
     end
     
     -- 6. Header Divider (Bottom bar of double top header)
     if b.HeaderDivider and b.TopLeft and b.TopRight then
-        b.HeaderDivider:SetTexCoord(0, 1, s.hdT/hDim, s.hdB/hDim)
+        b.HeaderDivider:SetTexCoord(0, 1, (s.hdT or 0)/hDim, (s.hdB or 0)/hDim)
         b.HeaderDivider:ClearAllPoints()
-        b.HeaderDivider:SetPoint("TOPLEFT", b.TopLeft, "TOPRIGHT", s.hdLeftX, s.hdY)
-        b.HeaderDivider:SetPoint("TOPRIGHT", b.TopRight, "TOPLEFT", s.hdRightX, s.hdY)
-        b.HeaderDivider:SetHeight(s.hdH)
+        b.HeaderDivider:SetPoint("TOPLEFT", b.TopLeft, "TOPRIGHT", s.hdLeftX or 0, s.hdY or -32)
+        b.HeaderDivider:SetPoint("TOPRIGHT", b.TopRight, "TOPLEFT", s.hdRightX or 0, s.hdY or -32)
+        b.HeaderDivider:SetHeight(s.hdH or 9)
     end
     
     -- 7. Bottom Edge
     if b.BottomEdge and b.BottomLeft and b.BottomRight then
-        b.BottomEdge:SetTexCoord(0, 1, s.beT/hDim, s.beB/hDim)
+        b.BottomEdge:SetTexCoord(0, 1, (s.beT or 0)/hDim, (s.beB or 0)/hDim)
         b.BottomEdge:ClearAllPoints()
-        b.BottomEdge:SetPoint("BOTTOMLEFT", b.BottomLeft, "BOTTOMRIGHT", s.beLeftX, s.beY)
-        b.BottomEdge:SetPoint("BOTTOMRIGHT", b.BottomRight, "BOTTOMLEFT", s.beRightX, s.beY)
-        b.BottomEdge:SetHeight(s.beH)
+        b.BottomEdge:SetPoint("BOTTOMLEFT", b.BottomLeft, "BOTTOMRIGHT", s.beLeftX or 0, s.beY or 0)
+        b.BottomEdge:SetPoint("BOTTOMRIGHT", b.BottomRight, "BOTTOMLEFT", s.beRightX or 0, s.beY or 0)
+        b.BottomEdge:SetHeight(s.beH or 10)
     end
     
     -- 8. Left Edge
     if b.LeftEdge and b.TopLeft and b.BottomLeft then
-        b.LeftEdge:SetTexCoord(s.leL/vDim, s.leR/vDim, 0, 1)
+        b.LeftEdge:SetTexCoord((s.leL or 0)/vDim, (s.leR or 0)/vDim, 0, 1)
         b.LeftEdge:ClearAllPoints()
-        b.LeftEdge:SetPoint("TOPLEFT", b.TopLeft, "BOTTOMLEFT", s.leX, s.leTopY)
-        b.LeftEdge:SetPoint("BOTTOMLEFT", b.BottomLeft, "TOPLEFT", 0, s.leBotY)
-        b.LeftEdge:SetWidth(s.leW)
+        b.LeftEdge:SetPoint("TOPLEFT", b.TopLeft, "BOTTOMLEFT", s.leX or 0, s.leTopY or 0)
+        b.LeftEdge:SetPoint("BOTTOMLEFT", b.BottomLeft, "TOPLEFT", 0, s.leBotY or 0)
+        b.LeftEdge:SetWidth(s.leW or 10)
     end
     
     -- 9. Right Edge
     if b.RightEdge and b.TopRight and b.BottomRight then
-        b.RightEdge:SetTexCoord(s.reL/vDim, s.reR/vDim, 0, 1)
+        b.RightEdge:SetTexCoord((s.reL or 0)/vDim, (s.reR or 0)/vDim, 0, 1)
         b.RightEdge:ClearAllPoints()
-        b.RightEdge:SetPoint("TOPRIGHT", b.TopRight, "BOTTOMRIGHT", s.reX, s.reTopY)
-        b.RightEdge:SetPoint("BOTTOMRIGHT", b.BottomRight, "TOPRIGHT", 0, s.reBotY)
-        b.RightEdge:SetWidth(s.reW)
+        b.RightEdge:SetPoint("TOPRIGHT", b.TopRight, "BOTTOMRIGHT", s.reX or 0, s.reTopY or 0)
+        b.RightEdge:SetPoint("BOTTOMRIGHT", b.BottomRight, "TOPRIGHT", 0, s.reBotY or 0)
+        b.RightEdge:SetWidth(s.reW or 10)
     end
     
     -- 10. Portrait Container
     if frame.PortraitContainer then
         frame.PortraitContainer:ClearAllPoints()
-        frame.PortraitContainer:SetPoint("TOPLEFT", frame, "TOPLEFT", s.portraitX, s.portraitY)
-        frame.PortraitContainer:SetSize(s.portraitSize, s.portraitSize)
+        frame.PortraitContainer:SetPoint("TOPLEFT", frame, "TOPLEFT", s.portraitX or 0, s.portraitY or 0)
+        frame.PortraitContainer:SetSize(s.portraitSize or 60, s.portraitSize or 60)
         frame.PortraitContainer:SetFrameLevel(b:GetFrameLevel() + 1)
         if frame.PortraitContainer.portrait then
             frame.PortraitContainer.portrait:ClearAllPoints()
@@ -256,15 +262,15 @@ local function ApplyState(frame, s)
         end
     elseif frame.portrait then
         frame.portrait:ClearAllPoints()
-        frame.portrait:SetPoint("TOPLEFT", frame, "TOPLEFT", s.portraitX, s.portraitY)
-        frame.portrait:SetSize(s.portraitSize, s.portraitSize)
+        frame.portrait:SetPoint("TOPLEFT", frame, "TOPLEFT", s.portraitX or 0, s.portraitY or 0)
+        frame.portrait:SetSize(s.portraitSize or 60, s.portraitSize or 60)
         frame.portrait:Show()
     end
     
     -- 11. Close Button
     if frame.CloseButton and b.TopRight then
         frame.CloseButton:ClearAllPoints()
-        frame.CloseButton:SetPoint("CENTER", b.TopRight, "TOPRIGHT", s.closeX, s.closeY)
+        frame.CloseButton:SetPoint("CENTER", b.TopRight, "TOPRIGHT", s.closeX or -14, s.closeY or -14)
         frame.CloseButton:SetFrameLevel(b:GetFrameLevel() + 5)
     end
 end
@@ -313,18 +319,18 @@ local function GetFormattedCode(theme, s)
         '    -- Close Button Center\n' ..
         '    closeX = %.1f, closeY = %.1f,\n' ..
         '}',
-        theme, s.name, s.cornersFile, s.horizFile, s.vertFile,
-        s.tlL, cWDim, s.tlR, cWDim, s.tlT, cHDim, s.tlB, cHDim, s.tlW, s.tlH, s.tlX, s.tlY,
-        s.trL, cWDim, s.trR, cWDim, s.trT, cHDim, s.trB, cHDim, s.trW, s.trH, s.trX, s.trY,
-        s.blL, cWDim, s.blR, cWDim, s.blT, cHDim, s.blB, cHDim, s.blW, s.blH, s.blX, s.blY,
-        s.brL, cWDim, s.brR, cWDim, s.brT, cHDim, s.brB, cHDim, s.brW, s.brH, s.brX, s.brY,
-        s.teT, hDim, s.teB, hDim, s.teH, s.teY, s.teLeftX, s.teRightX,
-        s.hdT, hDim, s.hdB, hDim, s.hdH, s.hdY, s.hdLeftX, s.hdRightX,
-        s.beT, hDim, s.beB, hDim, s.beH, s.beY, s.beLeftX, s.beRightX,
-        s.leL, vDim, s.leR, vDim, s.leW, s.leX, s.leTopY, s.leBotY,
-        s.reL, vDim, s.reR, vDim, s.reW, s.reX, s.reTopY, s.reBotY,
-        s.portraitX, s.portraitY, s.portraitSize,
-        s.closeX, s.closeY
+        theme, s.name or theme, s.cornersFile or "", s.horizFile or "", s.vertFile or "",
+        s.tlL or 0, cWDim, s.tlR or 0, cWDim, s.tlT or 0, cHDim, s.tlB or 0, cHDim, s.tlW or 0, s.tlH or 0, s.tlX or 0, s.tlY or 0,
+        s.trL or 0, cWDim, s.trR or 0, cWDim, s.trT or 0, cHDim, s.trB or 0, cHDim, s.trW or 0, s.trH or 0, s.trX or 0, s.trY or 0,
+        s.blL or 0, cWDim, s.blR or 0, cWDim, s.blT or 0, cHDim, s.blB or 0, cHDim, s.blW or 0, s.blH or 0, s.blX or 0, s.blY or 0,
+        s.brL or 0, cWDim, s.brR or 0, cWDim, s.brT or 0, cHDim, s.brB or 0, cHDim, s.brW or 0, s.brH or 0, s.brX or 0, s.brY or 0,
+        s.teT or 0, hDim, s.teB or 0, hDim, s.teH or 0, s.teY or 0, s.teLeftX or 0, s.teRightX or 0,
+        s.hdT or 0, hDim, s.hdB or 0, hDim, s.hdH or 0, s.hdY or 0, s.hdLeftX or 0, s.hdRightX or 0,
+        s.beT or 0, hDim, s.beB or 0, hDim, s.beH or 0, s.beY or 0, s.beLeftX or 0, s.beRightX or 0,
+        s.leL or 0, vDim, s.leR or 0, vDim, s.leW or 0, s.leX or 0, s.leTopY or 0, s.leBotY or 0,
+        s.reL or 0, vDim, s.reR or 0, vDim, s.reW or 0, s.reX or 0, s.reTopY or 0, s.reBotY or 0,
+        s.portraitX or 0, s.portraitY or 0, s.portraitSize or 0,
+        s.closeX or 0, s.closeY or 0
     )
 end
 
