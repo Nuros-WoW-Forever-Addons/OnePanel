@@ -26,15 +26,15 @@ local THEME_PRESETS = {
         
         -- BottomLeft Corner
         blL = 10, blR = 50, blT = 80, blB = 132,
-        blW = 40, blH = 52, blX = -5, blY = -5,
+        blW = 40, blH = 52, blX = -5, blY = -4,
         
         -- BottomRight Corner
         brL = 220, brR = 266, brT = 80, brB = 132,
-        brW = 46, brH = 52, brX = 1, brY = -5,
+        brW = 46, brH = 52, brX = 1, brY = -4,
         
         -- TopEdge
         teT = 124, teB = 133,
-        teH = 11, teY = -12, teLeftX = 0, teRightX = 0,
+        teH = 10, teY = -13, teLeftX = 0, teRightX = 0,
         
         -- Header Divider (Bottom of double top header)
         hdT = 149, hdB = 157,
@@ -42,11 +42,11 @@ local THEME_PRESETS = {
         
         -- Vertical Divider (between main panel and side panel)
         vdL = 258, vdR = 265,
-        vdW = 7, vdX = 1, vdTopY = 10, vdBotY = -14,
+        vdW = 7, vdX = 1, vdTopY = 11, vdBotY = -9,
         
         -- BottomEdge
         beT = 167, beB = 178,
-        beH = 12, beY = -2, beLeftX = 0, beRightX = 0,
+        beH = 10, beY = -1, beLeftX = 0, beRightX = 0,
         
         -- LeftEdge
         leL = 11, leR = 18,
@@ -61,6 +61,9 @@ local THEME_PRESETS = {
         
         -- Close Button Center
         closeX = -13.5, closeY = -14.5,
+        
+        -- Title Centering
+        titleX = 0, titleY = -27,
     },
     ["HiRes"] = {
         name        = "HiRes (2x Scaled)",
@@ -113,6 +116,9 @@ local THEME_PRESETS = {
         
         -- Close Button
         closeX = -15, closeY = -15,
+        
+        -- Title Centering
+        titleX = 0, titleY = -14,
     }
 }
 
@@ -156,6 +162,18 @@ local function ApplyState(frame, s)
         local hd = b:CreateTexture(nil, "OVERLAY", nil, 1)
         hd:SetHorizTile(true)
         b.HeaderDivider = hd
+    end
+    
+    -- Ensure TitleBg exists on border frame (tiled black marble)
+    if not b.TitleBg then
+        local tbg = b:CreateTexture(nil, "BACKGROUND", nil, -1)
+        tbg:SetHorizTile(true)
+        tbg:SetVertTile(true)
+        b.TitleBg = tbg
+    end
+    if frame.Bg then
+        frame.Bg:SetTexture("Interface\\FrameGeneral\\UI-Background-Marble")
+        frame.Bg:SetVertexColor(0.2, 0.2, 0.2, 1.0)
     end
     
     -- Update textures for theme
@@ -230,6 +248,15 @@ local function ApplyState(frame, s)
         b.HeaderDivider:SetHeight(s.hdH or 9)
     end
     
+    -- 6b. Title Bar Background (Tiled black marble behind header text)
+    if b.TitleBg and b.TopLeft and b.TopRight then
+        b.TitleBg:SetTexture("Interface\\FrameGeneral\\UI-Background-Marble")
+        b.TitleBg:SetVertexColor(0.2, 0.2, 0.2, 1.0)
+        b.TitleBg:ClearAllPoints()
+        b.TitleBg:SetPoint("TOPLEFT", b.TopLeft, "TOPRIGHT", s.teLeftX or 0, s.teY or -13)
+        b.TitleBg:SetPoint("BOTTOMRIGHT", b.TopRight, "TOPLEFT", s.hdRightX or 0, (s.hdY or -32) - (s.hdH or 9))
+    end
+    
     -- 7. Bottom Edge
     if b.BottomEdge and b.BottomLeft and b.BottomRight then
         b.BottomEdge:SetTexCoord(0, 1, (s.beT or 0)/hDim, (s.beB or 0)/hDim)
@@ -290,20 +317,30 @@ local function ApplyState(frame, s)
         vDivider:SetTexCoord((s.vdL or 258)/vDim, (s.vdR or 265)/vDim, 0, 1)
         vDivider:SetWidth(s.vdW or 7)
         vDivider:ClearAllPoints()
-        vDivider:SetPoint("TOP", leftArea, "TOPRIGHT", s.vdX or 1, s.vdTopY or 10)
-        vDivider:SetPoint("BOTTOM", leftArea, "BOTTOMRIGHT", s.vdX or 1, s.vdBotY or -14)
+        vDivider:SetPoint("TOP", leftArea, "TOPRIGHT", s.vdX or 1, s.vdTopY or 11)
+        vDivider:SetPoint("BOTTOM", leftArea, "BOTTOMRIGHT", s.vdX or 1, s.vdBotY or -9)
     end
     
     -- 13. Title Text Centering
+    local titleTarget = (frame.TitleContainer and frame.TitleContainer.TitleText) or frame.TitleText or frame.Title
     if frame.TitleContainer then
         frame.TitleContainer:ClearAllPoints()
-        frame.TitleContainer:SetPoint("TOPLEFT", frame, "TOPLEFT", 60, s.teY or -12)
-        frame.TitleContainer:SetPoint("BOTTOMRIGHT", frame, "TOPRIGHT", -38, (s.hdY or -32) + (s.hdH or 9))
+        frame.TitleContainer:SetPoint("CENTER", frame, "TOP", s.titleX or 0, s.titleY or -27)
+        frame.TitleContainer:SetSize(400, 24)
         frame.TitleContainer:SetFrameLevel(b:GetFrameLevel() + 2)
-        if frame.TitleContainer.TitleText then
-            frame.TitleContainer.TitleText:ClearAllPoints()
-            frame.TitleContainer.TitleText:SetPoint("CENTER", frame.TitleContainer, "CENTER", 0, 0)
+        frame.TitleContainer:Show()
+    end
+    if titleTarget then
+        titleTarget:ClearAllPoints()
+        if frame.TitleContainer and titleTarget:GetParent() == frame.TitleContainer then
+            titleTarget:SetPoint("CENTER", frame.TitleContainer, "CENTER", 0, 0)
+        else
+            titleTarget:SetPoint("CENTER", frame, "TOP", s.titleX or 0, s.titleY or -27)
         end
+        titleTarget:SetDrawLayer("OVERLAY", 3)
+        if titleTarget.SetJustifyH then titleTarget:SetJustifyH("CENTER") end
+        if titleTarget.SetJustifyV then titleTarget:SetJustifyV("MIDDLE") end
+        titleTarget:Show()
     end
 end
 
@@ -352,7 +389,9 @@ local function GetFormattedCode(theme, s)
         '    -- Portrait Center & Size\n' ..
         '    portraitX = %d, portraitY = %d, portraitSize = %d,\n\n' ..
         '    -- Close Button Center\n' ..
-        '    closeX = %.1f, closeY = %.1f,\n' ..
+        '    closeX = %.1f, closeY = %.1f,\n\n' ..
+        '    -- Title Position\n' ..
+        '    titleX = %d, titleY = %d,\n' ..
         '}',
         theme, s.name or theme, s.cornersFile or "", s.horizFile or "", s.vertFile or "",
         s.tlL or 0, cWDim, s.tlR or 0, cWDim, s.tlT or 0, cHDim, s.tlB or 0, cHDim, s.tlW or 0, s.tlH or 0, s.tlX or 0, s.tlY or 0,
@@ -361,12 +400,13 @@ local function GetFormattedCode(theme, s)
         s.brL or 0, cWDim, s.brR or 0, cWDim, s.brT or 0, cHDim, s.brB or 0, cHDim, s.brW or 0, s.brH or 0, s.brX or 0, s.brY or 0,
         s.teT or 0, hDim, s.teB or 0, hDim, s.teH or 0, s.teY or 0, s.teLeftX or 0, s.teRightX or 0,
         s.hdT or 0, hDim, s.hdB or 0, hDim, s.hdH or 0, s.hdY or 0, s.hdLeftX or 0, s.hdRightX or 0,
-        s.vdL or 258, vDim, s.vdR or 265, vDim, s.vdW or 7, s.vdX or 1, s.vdTopY or 10, s.vdBotY or -14,
+        s.vdL or 258, vDim, s.vdR or 265, vDim, s.vdW or 7, s.vdX or 1, s.vdTopY or 11, s.vdBotY or -9,
         s.beT or 0, hDim, s.beB or 0, hDim, s.beH or 0, s.beY or 0, s.beLeftX or 0, s.beRightX or 0,
         s.leL or 0, vDim, s.leR or 0, vDim, s.leW or 0, s.leX or 0, s.leTopY or 0, s.leBotY or 0,
         s.reL or 0, vDim, s.reR or 0, vDim, s.reW or 0, s.reX or 0, s.reTopY or 0, s.reBotY or 0,
         s.portraitX or 0, s.portraitY or 0, s.portraitSize or 0,
-        s.closeX or 0, s.closeY or 0
+        s.closeX or 0, s.closeY or 0,
+        s.titleX or 0, s.titleY or (theme == "HiRes" and -14 or -27)
     )
 end
 
@@ -384,6 +424,7 @@ local GEOM_TARGETS = {
     { id = "RightEdge", label = "Right Edge",    keys = { "reX", "reW", "reTopY", "reBotY" },     names = { "X Offset", "Width", "Top Y", "Bottom Y" } },
     { id = "Portrait",  label = "Portrait",      keys = { "portraitX", "portraitY", "portraitSize" }, names = { "X Offset", "Y Offset", "Icon Size" } },
     { id = "CloseBtn",  label = "Close Button",  keys = { "closeX", "closeY" },                      names = { "X Offset", "Y Offset" } },
+    { id = "Title",     label = "Title Text",    keys = { "titleX", "titleY" },                      names = { "X Offset", "Y Offset" } },
 }
 
 -- TARGET DEFINITIONS FOR TEXCOORD (UV CROP) MODE
@@ -483,9 +524,11 @@ local function CreateNudgerFrame()
         wipe(targetButtons)
         
         local targets = (activeMode == "Geometry") and GEOM_TARGETS or UV_TARGETS
-        local cols = 4
-        local btnW = 108
+        local cols = 5
+        local btnW = 86
         local btnH = 22
+        local gapX = 5
+        local gapY = 4
         
         -- Check if currentTarget is valid in this mode
         local found = false
@@ -499,9 +542,11 @@ local function CreateNudgerFrame()
         for idx, t in ipairs(targets) do
             local btn = CreateFrame("Button", nil, targetButtonContainer, "UIPanelButtonTemplate")
             btn:SetSize(btnW, btnH)
+            local fs = btn:GetFontString()
+            if fs then fs:SetFontObject("GameFontNormalSmall") end
             local row = math.floor((idx - 1) / cols)
             local col = (idx - 1) % cols
-            btn:SetPoint("TOPLEFT", targetButtonContainer, "TOPLEFT", col * (btnW + 6), -row * (btnH + 4))
+            btn:SetPoint("TOPLEFT", targetButtonContainer, "TOPLEFT", col * (btnW + gapX), -row * (btnH + gapY))
             btn:SetText(t.label)
             btn:SetScript("OnClick", function()
                 currentTarget = t.id
