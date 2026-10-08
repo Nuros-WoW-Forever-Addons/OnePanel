@@ -63,7 +63,7 @@ local THEME_PRESETS = {
         closeX = -13.5, closeY = -14.5,
         
         -- Title Centering
-        titleX = 0, titleY = -27,
+        titleX = 0, titleY = -13,
     },
     ["HiRes"] = {
         name        = "HiRes (2x Scaled)",
@@ -164,16 +164,19 @@ local function ApplyState(frame, s)
         b.HeaderDivider = hd
     end
     
-    -- Ensure TitleBg exists on border frame (tiled black marble)
-    if not b.TitleBg then
-        local tbg = b:CreateTexture(nil, "BACKGROUND", nil, -1)
-        tbg:SetHorizTile(true)
-        tbg:SetVertTile(true)
-        b.TitleBg = tbg
-    end
     if frame.Bg then
+        frame.Bg:ClearAllPoints()
+        frame.Bg:SetPoint("TOPLEFT", frame, "TOPLEFT", -4, 2)
+        frame.Bg:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", 0, -4)
+        frame.Bg:SetHorizTile(false)
+        frame.Bg:SetVertTile(false)
+        frame.Bg:SetTexCoord(0, 1, 0, 1)
         frame.Bg:SetTexture("Interface\\FrameGeneral\\UI-Background-Marble")
         frame.Bg:SetVertexColor(0.2, 0.2, 0.2, 1.0)
+        frame.Bg:Show()
+    end
+    if b.TitleBg then
+        b.TitleBg:Hide()
     end
     
     -- Update textures for theme
@@ -248,13 +251,9 @@ local function ApplyState(frame, s)
         b.HeaderDivider:SetHeight(s.hdH or 9)
     end
     
-    -- 6b. Title Bar Background (Tiled black marble behind header text)
-    if b.TitleBg and b.TopLeft and b.TopRight then
-        b.TitleBg:SetTexture("Interface\\FrameGeneral\\UI-Background-Marble")
-        b.TitleBg:SetVertexColor(0.2, 0.2, 0.2, 1.0)
-        b.TitleBg:ClearAllPoints()
-        b.TitleBg:SetPoint("TOPLEFT", b.TopLeft, "TOPRIGHT", s.teLeftX or 0, s.teY or -13)
-        b.TitleBg:SetPoint("BOTTOMRIGHT", b.TopRight, "TOPLEFT", s.hdRightX or 0, (s.hdY or -32) - (s.hdH or 9))
+    -- 6b. Hide TitleBg if present (master frame.Bg seamlessly covers title bar and main panel)
+    if b.TitleBg then
+        b.TitleBg:Hide()
     end
     
     -- 7. Bottom Edge
@@ -325,7 +324,7 @@ local function ApplyState(frame, s)
     local titleTarget = (frame.TitleContainer and frame.TitleContainer.TitleText) or frame.TitleText or frame.Title
     if frame.TitleContainer then
         frame.TitleContainer:ClearAllPoints()
-        frame.TitleContainer:SetPoint("CENTER", frame, "TOP", s.titleX or 0, s.titleY or -27)
+        frame.TitleContainer:SetPoint("CENTER", frame, "TOP", s.titleX or 0, s.titleY or -13)
         frame.TitleContainer:SetSize(400, 24)
         frame.TitleContainer:SetFrameLevel(b:GetFrameLevel() + 2)
         frame.TitleContainer:Show()
@@ -335,7 +334,7 @@ local function ApplyState(frame, s)
         if frame.TitleContainer and titleTarget:GetParent() == frame.TitleContainer then
             titleTarget:SetPoint("CENTER", frame.TitleContainer, "CENTER", 0, 0)
         else
-            titleTarget:SetPoint("CENTER", frame, "TOP", s.titleX or 0, s.titleY or -27)
+            titleTarget:SetPoint("CENTER", frame, "TOP", s.titleX or 0, s.titleY or -13)
         end
         titleTarget:SetDrawLayer("OVERLAY", 3)
         if titleTarget.SetJustifyH then titleTarget:SetJustifyH("CENTER") end
@@ -406,7 +405,7 @@ local function GetFormattedCode(theme, s)
         s.reL or 0, vDim, s.reR or 0, vDim, s.reW or 0, s.reX or 0, s.reTopY or 0, s.reBotY or 0,
         s.portraitX or 0, s.portraitY or 0, s.portraitSize or 0,
         s.closeX or 0, s.closeY or 0,
-        s.titleX or 0, s.titleY or (theme == "HiRes" and -14 or -27)
+        s.titleX or 0, s.titleY or (theme == "HiRes" and -14 or -13)
     )
 end
 
