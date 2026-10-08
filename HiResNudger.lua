@@ -18,41 +18,45 @@ local THEME_PRESETS = {
         
         -- TopLeft (Portrait Ring)
         tlL = 136, tlR = 267, tlT = 136, tlB = 267,
-        tlW = 132, tlH = 132, tlX = -16, tlY = 16,
+        tlW = 132.0, tlH = 132.0, tlX = -13, tlY = 14,
         
         -- TopRight (Close Box)
         trL = 0, trR = 131, trT = 148, trB = 267,
-        trW = 132, trH = 120, trX = 0, trY = 2,
+        trW = 132.0, trH = 120.0, trX = 0, trY = 2,
         
         -- BottomLeft Corner
         blL = 10, blR = 50, blT = 80, blB = 132,
-        blW = 40, blH = 52, blX = -16, blY = -8,
+        blW = 40, blH = 52, blX = -5, blY = -5,
         
         -- BottomRight Corner
         brL = 220, brR = 266, brT = 80, brB = 132,
-        brW = 46, brH = 52, brX = 0, brY = -8,
+        brW = 46, brH = 52, brX = 1, brY = -5,
         
         -- TopEdge
         teT = 123, teB = 133,
         teH = 11, teY = -12, teLeftX = 0, teRightX = 0,
         
+        -- Header Divider (Bottom of double top header)
+        hdT = 148, hdB = 157,
+        hdH = 9, hdY = -32, hdLeftX = 0, hdRightX = 0,
+        
         -- BottomEdge
         beT = 167, beB = 178,
-        beH = 12, beY = 0, beLeftX = 0, beRightX = 0,
+        beH = 12, beY = -2, beLeftX = 0, beRightX = 0,
         
         -- LeftEdge
         leL = 11, leR = 18,
-        leW = 7, leX = 14, leTopY = 0, leBotY = 0,
+        leW = 7, leX = 9, leTopY = 0, leBotY = 0,
         
         -- RightEdge
         reL = 258, reR = 265,
         reW = 7, reX = 0, reTopY = 0, reBotY = 0,
         
-        -- Portrait
-        portraitX = -1, portraitY = 1, portraitSize = 60,
+        -- Portrait Center & Size
+        portraitX = -7, portraitY = 7, portraitSize = 60,
         
-        -- Close Button
-        closeX = -13.5, closeY = -13.5,
+        -- Close Button Center
+        closeX = -13.5, closeY = -14.5,
     },
     ["HiRes"] = {
         name        = "HiRes (2x Scaled)",
@@ -79,6 +83,10 @@ local THEME_PRESETS = {
         -- TopEdge
         teT = 0, teB = 18,
         teH = 9, teY = 3, teLeftX = -8, teRightX = 8,
+        
+        -- Header Divider (Bottom of double top header)
+        hdT = 58, hdB = 70,
+        hdH = 12, hdY = -23, hdLeftX = -8, hdRightX = 8,
         
         -- BottomEdge
         beT = 71, beB = 89,
@@ -143,6 +151,7 @@ local function ApplyState(frame, s)
         b.BottomLeft:SetTexture(preset.cornersFile)
         b.BottomRight:SetTexture(preset.cornersFile)
         b.TopEdge:SetTexture(preset.horizFile)
+        if b.HeaderDivider then b.HeaderDivider:SetTexture(preset.horizFile) end
         b.BottomEdge:SetTexture(preset.horizFile)
         b.LeftEdge:SetTexture(preset.vertFile)
         b.RightEdge:SetTexture(preset.vertFile)
@@ -153,6 +162,9 @@ local function ApplyState(frame, s)
     local cHDim = (activeTheme == "HiRes") and 256 or 512
     local hDim = (activeTheme == "HiRes") and 128 or 512
     local vDim = (activeTheme == "HiRes") and 64 or 512
+    
+    -- Ensure border is at frame level + 10
+    b:SetFrameLevel(frame:GetFrameLevel() + 10)
     
     -- 1. Top-Left Corner (Portrait Ring)
     if b.TopLeft then
@@ -195,7 +207,16 @@ local function ApplyState(frame, s)
         b.TopEdge:SetHeight(s.teH)
     end
     
-    -- 6. Bottom Edge
+    -- 6. Header Divider (Bottom bar of double top header)
+    if b.HeaderDivider and b.TopLeft and b.TopRight then
+        b.HeaderDivider:SetTexCoord(0, 1, s.hdT/hDim, s.hdB/hDim)
+        b.HeaderDivider:ClearAllPoints()
+        b.HeaderDivider:SetPoint("TOPLEFT", b.TopLeft, "TOPRIGHT", s.hdLeftX, s.hdY)
+        b.HeaderDivider:SetPoint("TOPRIGHT", b.TopRight, "TOPLEFT", s.hdRightX, s.hdY)
+        b.HeaderDivider:SetHeight(s.hdH)
+    end
+    
+    -- 7. Bottom Edge
     if b.BottomEdge and b.BottomLeft and b.BottomRight then
         b.BottomEdge:SetTexCoord(0, 1, s.beT/hDim, s.beB/hDim)
         b.BottomEdge:ClearAllPoints()
@@ -204,7 +225,7 @@ local function ApplyState(frame, s)
         b.BottomEdge:SetHeight(s.beH)
     end
     
-    -- 7. Left Edge
+    -- 8. Left Edge
     if b.LeftEdge and b.TopLeft and b.BottomLeft then
         b.LeftEdge:SetTexCoord(s.leL/vDim, s.leR/vDim, 0, 1)
         b.LeftEdge:ClearAllPoints()
@@ -213,7 +234,7 @@ local function ApplyState(frame, s)
         b.LeftEdge:SetWidth(s.leW)
     end
     
-    -- 8. Right Edge
+    -- 9. Right Edge
     if b.RightEdge and b.TopRight and b.BottomRight then
         b.RightEdge:SetTexCoord(s.reL/vDim, s.reR/vDim, 0, 1)
         b.RightEdge:ClearAllPoints()
@@ -222,11 +243,12 @@ local function ApplyState(frame, s)
         b.RightEdge:SetWidth(s.reW)
     end
     
-    -- 9. Portrait Container
+    -- 10. Portrait Container
     if frame.PortraitContainer then
         frame.PortraitContainer:ClearAllPoints()
         frame.PortraitContainer:SetPoint("TOPLEFT", frame, "TOPLEFT", s.portraitX, s.portraitY)
         frame.PortraitContainer:SetSize(s.portraitSize, s.portraitSize)
+        frame.PortraitContainer:SetFrameLevel(b:GetFrameLevel() + 1)
         if frame.PortraitContainer.portrait then
             frame.PortraitContainer.portrait:ClearAllPoints()
             frame.PortraitContainer.portrait:SetAllPoints(frame.PortraitContainer)
@@ -239,10 +261,11 @@ local function ApplyState(frame, s)
         frame.portrait:Show()
     end
     
-    -- 10. Close Button
+    -- 11. Close Button
     if frame.CloseButton and b.TopRight then
         frame.CloseButton:ClearAllPoints()
         frame.CloseButton:SetPoint("CENTER", b.TopRight, "TOPRIGHT", s.closeX, s.closeY)
+        frame.CloseButton:SetFrameLevel(b:GetFrameLevel() + 5)
     end
 end
 
@@ -273,6 +296,9 @@ local function GetFormattedCode(theme, s)
         '    -- TopEdge\n' ..
         '    teCoords = { 0, 1, %d/%d, %d/%d },\n' ..
         '    teH = %d, teY = %d, teLeftX = %d, teRightX = %d,\n\n' ..
+        '    -- Header Divider (Bottom of double top header)\n' ..
+        '    hdCoords = { 0, 1, %d/%d, %d/%d },\n' ..
+        '    hdH = %d, hdY = %d, hdLeftX = %d, hdRightX = %d,\n\n' ..
         '    -- BottomEdge\n' ..
         '    beCoords = { 0, 1, %d/%d, %d/%d },\n' ..
         '    beH = %d, beY = %d, beLeftX = %d, beRightX = %d,\n\n' ..
@@ -293,6 +319,7 @@ local function GetFormattedCode(theme, s)
         s.blL, cWDim, s.blR, cWDim, s.blT, cHDim, s.blB, cHDim, s.blW, s.blH, s.blX, s.blY,
         s.brL, cWDim, s.brR, cWDim, s.brT, cHDim, s.brB, cHDim, s.brW, s.brH, s.brX, s.brY,
         s.teT, hDim, s.teB, hDim, s.teH, s.teY, s.teLeftX, s.teRightX,
+        s.hdT, hDim, s.hdB, hDim, s.hdH, s.hdY, s.hdLeftX, s.hdRightX,
         s.beT, hDim, s.beB, hDim, s.beH, s.beY, s.beLeftX, s.beRightX,
         s.leL, vDim, s.leR, vDim, s.leW, s.leX, s.leTopY, s.leBotY,
         s.reL, vDim, s.reR, vDim, s.reW, s.reX, s.reTopY, s.reBotY,
@@ -308,6 +335,7 @@ local GEOM_TARGETS = {
     { id = "BotLeft",   label = "Bottom-Left",   keys = { "blX", "blY", "blW", "blH" },             names = { "X Offset", "Y Offset", "Width", "Height" } },
     { id = "BotRight",  label = "Bottom-Right",  keys = { "brX", "brY", "brW", "brH" },             names = { "X Offset", "Y Offset", "Width", "Height" } },
     { id = "TopEdge",   label = "Top Edge",      keys = { "teY", "teH", "teLeftX", "teRightX" },   names = { "Y Offset", "Height", "Left X", "Right X" } },
+    { id = "HeaderDiv", label = "Header Div",    keys = { "hdY", "hdH", "hdLeftX", "hdRightX" },   names = { "Y Offset", "Height", "Left X", "Right X" } },
     { id = "BotEdge",   label = "Bottom Edge",   keys = { "beY", "beH", "beLeftX", "beRightX" },   names = { "Y Offset", "Height", "Left X", "Right X" } },
     { id = "LeftEdge",  label = "Left Edge",     keys = { "leX", "leW", "leTopY", "leBotY" },     names = { "X Offset", "Width", "Top Y", "Bottom Y" } },
     { id = "RightEdge", label = "Right Edge",    keys = { "reX", "reW", "reTopY", "reBotY" },     names = { "X Offset", "Width", "Top Y", "Bottom Y" } },
@@ -322,6 +350,7 @@ local UV_TARGETS = {
     { id = "BotLeft",   label = "BL UV",         keys = { "blL", "blR", "blT", "blB" }, names = { "Left (px)", "Right (px)", "Top (px)", "Bottom (px)" } },
     { id = "BotRight",  label = "BR UV",         keys = { "brL", "brR", "brT", "brB" }, names = { "Left (px)", "Right (px)", "Top (px)", "Bottom (px)" } },
     { id = "TopEdge",   label = "Top Edge UV",   keys = { "teT", "teB" },               names = { "Top (px)", "Bottom (px)" } },
+    { id = "HeaderDiv", label = "Header Div UV", keys = { "hdT", "hdB" },               names = { "Top (px)", "Bottom (px)" } },
     { id = "BotEdge",   label = "Bot Edge UV",   keys = { "beT", "beB" },               names = { "Top (px)", "Bottom (px)" } },
     { id = "LeftEdge",  label = "Left Edge UV",  keys = { "leL", "leR" },               names = { "Left (px)", "Right (px)" } },
     { id = "RightEdge", label = "Right Edge UV", keys = { "reL", "reR" },               names = { "Left (px)", "Right (px)" } },

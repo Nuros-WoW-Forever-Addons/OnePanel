@@ -137,16 +137,9 @@ local function CreateMasterFrame()
     
     -- Inner Content Display Area (Container for Plugin Views)
     local contentArea = CreateFrame("Frame", "OnePanelContentArea", frame)
-    contentArea:SetPoint("TOPLEFT", frame, "TOPLEFT", 12, -32)
-    contentArea:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -12, 12)
-    
-    if Utils and Utils.FrameHelper then
-        Utils.FrameHelper:ApplyBackdrop(contentArea,
-            nil,
-            "Interface\\Tooltips\\UI-Tooltip-Border",
-            16, 16, { left = 4, right = 4, top = 4, bottom = 4 }
-        )
-    end
+    contentArea:SetPoint("TOPLEFT", frame, "TOPLEFT", 12, -34)
+    contentArea:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -10, 10)
+    contentArea:SetFrameLevel(frame:GetFrameLevel() + 2)
     frame.ContentArea = contentArea
 
     return frame
