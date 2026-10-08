@@ -126,6 +126,11 @@ local function CreateMasterFrame()
     -- Store frame reference
     OnePanel.frame = frame
     
+    -- Apply HiRes Frame Artwork Theme (UIFrameHiRes)
+    if Utils and Utils.FrameHelper and Utils.FrameHelper.ApplyHiResFrame then
+        Utils.FrameHelper:ApplyHiResFrame(frame)
+    end
+    
     -- Set Initial Title & Portrait
     OnePanel:SetTitleText()
     OnePanel:SetHeaderPortrait()
