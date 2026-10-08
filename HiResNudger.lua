@@ -64,6 +64,9 @@ local THEME_PRESETS = {
         
         -- Title Centering
         titleX = 0, titleY = -13,
+        
+        -- Background Insets (contained within metal borders)
+        bgLeft = 0, bgRight = -3, bgTop = -3, bgBottom = 0,
     },
     ["HiRes"] = {
         name        = "HiRes (2x Scaled)",
@@ -119,6 +122,9 @@ local THEME_PRESETS = {
         
         -- Title Centering
         titleX = 0, titleY = -14,
+        
+        -- Background Insets
+        bgLeft = 0, bgRight = -3, bgTop = -3, bgBottom = 0,
     }
 }
 
@@ -166,8 +172,8 @@ local function ApplyState(frame, s)
     
     if frame.Bg then
         frame.Bg:ClearAllPoints()
-        frame.Bg:SetPoint("TOPLEFT", frame, "TOPLEFT", -4, 2)
-        frame.Bg:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", 0, -4)
+        frame.Bg:SetPoint("TOPLEFT", frame, "TOPLEFT", s.bgLeft or 0, s.bgTop or -3)
+        frame.Bg:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", s.bgRight or -3, s.bgBottom or 0)
         frame.Bg:SetHorizTile(false)
         frame.Bg:SetVertTile(false)
         frame.Bg:SetTexCoord(0, 1, 0, 1)
@@ -390,7 +396,9 @@ local function GetFormattedCode(theme, s)
         '    -- Close Button Center\n' ..
         '    closeX = %.1f, closeY = %.1f,\n\n' ..
         '    -- Title Position\n' ..
-        '    titleX = %d, titleY = %d,\n' ..
+        '    titleX = %d, titleY = %d,\n\n' ..
+        '    -- Background Insets (contained within metal borders)\n' ..
+        '    bgLeft = %d, bgRight = %d, bgTop = %d, bgBottom = %d,\n' ..
         '}',
         theme, s.name or theme, s.cornersFile or "", s.horizFile or "", s.vertFile or "",
         s.tlL or 0, cWDim, s.tlR or 0, cWDim, s.tlT or 0, cHDim, s.tlB or 0, cHDim, s.tlW or 0, s.tlH or 0, s.tlX or 0, s.tlY or 0,
@@ -405,25 +413,27 @@ local function GetFormattedCode(theme, s)
         s.reL or 0, vDim, s.reR or 0, vDim, s.reW or 0, s.reX or 0, s.reTopY or 0, s.reBotY or 0,
         s.portraitX or 0, s.portraitY or 0, s.portraitSize or 0,
         s.closeX or 0, s.closeY or 0,
-        s.titleX or 0, s.titleY or (theme == "HiRes" and -14 or -13)
+        s.titleX or 0, s.titleY or (theme == "HiRes" and -14 or -13),
+        s.bgLeft or 0, s.bgRight or -3, s.bgTop or -3, s.bgBottom or 0
     )
 end
 
 -- TARGET DEFINITIONS FOR GEOMETRY MODE
 local GEOM_TARGETS = {
-    { id = "TopLeft",   label = "Portrait Ring", keys = { "tlX", "tlY", "tlW", "tlH" },             names = { "X Offset", "Y Offset", "Width", "Height" } },
-    { id = "TopRight",  label = "Close Box",     keys = { "trX", "trY", "trW", "trH" },             names = { "X Offset", "Y Offset", "Width", "Height" } },
-    { id = "BotLeft",   label = "Bottom-Left",   keys = { "blX", "blY", "blW", "blH" },             names = { "X Offset", "Y Offset", "Width", "Height" } },
-    { id = "BotRight",  label = "Bottom-Right",  keys = { "brX", "brY", "brW", "brH" },             names = { "X Offset", "Y Offset", "Width", "Height" } },
-    { id = "TopEdge",   label = "Top Edge",      keys = { "teY", "teH", "teLeftX", "teRightX" },   names = { "Y Offset", "Height", "Left X", "Right X" } },
-    { id = "HeaderDiv", label = "Header Div",    keys = { "hdY", "hdH", "hdLeftX", "hdRightX" },   names = { "Y Offset", "Height", "Left X", "Right X" } },
-    { id = "VertDiv",   label = "Vert Divider",  keys = { "vdX", "vdW", "vdTopY", "vdBotY" },     names = { "X Offset", "Width", "Top Y", "Bottom Y" } },
-    { id = "BotEdge",   label = "Bottom Edge",   keys = { "beY", "beH", "beLeftX", "beRightX" },   names = { "Y Offset", "Height", "Left X", "Right X" } },
-    { id = "LeftEdge",  label = "Left Edge",     keys = { "leX", "leW", "leTopY", "leBotY" },     names = { "X Offset", "Width", "Top Y", "Bottom Y" } },
-    { id = "RightEdge", label = "Right Edge",    keys = { "reX", "reW", "reTopY", "reBotY" },     names = { "X Offset", "Width", "Top Y", "Bottom Y" } },
-    { id = "Portrait",  label = "Portrait",      keys = { "portraitX", "portraitY", "portraitSize" }, names = { "X Offset", "Y Offset", "Icon Size" } },
-    { id = "CloseBtn",  label = "Close Button",  keys = { "closeX", "closeY" },                      names = { "X Offset", "Y Offset" } },
-    { id = "Title",     label = "Title Text",    keys = { "titleX", "titleY" },                      names = { "X Offset", "Y Offset" } },
+    { id = "TopLeft",    label = "Portrait Ring", keys = { "tlX", "tlY", "tlW", "tlH" },             names = { "X Offset", "Y Offset", "Width", "Height" } },
+    { id = "TopRight",   label = "Close Box",     keys = { "trX", "trY", "trW", "trH" },             names = { "X Offset", "Y Offset", "Width", "Height" } },
+    { id = "BotLeft",    label = "Bottom-Left",   keys = { "blX", "blY", "blW", "blH" },             names = { "X Offset", "Y Offset", "Width", "Height" } },
+    { id = "BotRight",   label = "Bottom-Right",  keys = { "brX", "brY", "brW", "brH" },             names = { "X Offset", "Y Offset", "Width", "Height" } },
+    { id = "TopEdge",    label = "Top Edge",      keys = { "teY", "teH", "teLeftX", "teRightX" },   names = { "Y Offset", "Height", "Left X", "Right X" } },
+    { id = "HeaderDiv",  label = "Header Div",    keys = { "hdY", "hdH", "hdLeftX", "hdRightX" },   names = { "Y Offset", "Height", "Left X", "Right X" } },
+    { id = "VertDiv",    label = "Vert Divider",  keys = { "vdX", "vdW", "vdTopY", "vdBotY" },     names = { "X Offset", "Width", "Top Y", "Bottom Y" } },
+    { id = "BotEdge",    label = "Bottom Edge",   keys = { "beY", "beH", "beLeftX", "beRightX" },   names = { "Y Offset", "Height", "Left X", "Right X" } },
+    { id = "LeftEdge",   label = "Left Edge",     keys = { "leX", "leW", "leTopY", "leBotY" },     names = { "X Offset", "Width", "Top Y", "Bottom Y" } },
+    { id = "RightEdge",  label = "Right Edge",    keys = { "reX", "reW", "reTopY", "reBotY" },     names = { "X Offset", "Width", "Top Y", "Bottom Y" } },
+    { id = "Portrait",   label = "Portrait",      keys = { "portraitX", "portraitY", "portraitSize" }, names = { "X Offset", "Y Offset", "Icon Size" } },
+    { id = "CloseBtn",   label = "Close Button",  keys = { "closeX", "closeY" },                      names = { "X Offset", "Y Offset" } },
+    { id = "Title",      label = "Title Text",    keys = { "titleX", "titleY" },                      names = { "X Offset", "Y Offset" } },
+    { id = "Background", label = "Background",    keys = { "bgLeft", "bgRight", "bgTop", "bgBottom" }, names = { "Left Inset", "Right Inset", "Top Inset", "Bottom Inset" } },
 }
 
 -- TARGET DEFINITIONS FOR TEXCOORD (UV CROP) MODE
