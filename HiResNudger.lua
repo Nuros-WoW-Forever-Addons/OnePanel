@@ -1,135 +1,228 @@
 --[[
     OnePanel - HiResNudger.lua
-    Interactive on-screen alignment and tuning panel for UIFrameHiRes metal border.
-    Allows live pixel-level adjustments of all frame corners, edges, portrait, and close button,
-    with an export dialog for easy copy/pasting.
+    Interactive on-screen alignment and tuning panel for UIFrameMetal / UIFrameHiRes borders.
+    Allows live pixel-level adjustments of all frame corners, edges, crops (UVs), portrait, and close button,
+    with an export dialog for copying tuned Lua tables directly to the clipboard.
 --]]
 
 local OnePanel = _G.OnePanel
 local Utils = _G.OnePanelUtils
 
-local defaultState = {
-    -- Top-Left Corner (Portrait Ring)
-    tlX = -14,
-    tlY = 18,
-    tlW = 118.5,
-    tlH = 121.5,
-    
-    -- Top-Right Corner (Close Box)
-    trX = 4,
-    trY = 18,
-    trW = 76.5,
-    trH = 67.5,
-    
-    -- Bottom-Left Corner
-    blX = -11,
-    blY = -8,
-    blW = 23,
-    blH = 25,
-    
-    -- Bottom-Right Corner
-    brX = 4,
-    brY = -8,
-    brW = 24,
-    brH = 25,
-    
-    -- Top Edge
-    teY = 3,
-    teH = 9,
-    
-    -- Bottom Edge
-    beY = 0,
-    beH = 9,
-    
-    -- Left Edge
-    leX = 12,
-    leW = 9,
-    
-    -- Right Edge
-    reX = 0,
-    reW = 9,
-    
-    -- Portrait
-    portraitX = 1,
-    portraitY = -7,
-    portraitSize = 60,
-    
-    -- Close Button
-    closeX = -15,
-    closeY = -15,
+-- Theme presets
+local THEME_PRESETS = {
+    ["Metal"] = {
+        name        = "Metal (1x Standard)",
+        cornersFile = "Interface\\FrameGeneral\\UIFrameMetal",
+        horizFile   = "Interface\\FrameGeneral\\UIFrameMetalHorizontal",
+        vertFile    = "Interface\\FrameGeneral\\UIFrameMetalVertical",
+        
+        -- TopLeft (Portrait Ring)
+        tlL = 136, tlR = 267, tlT = 136, tlB = 267,
+        tlW = 132, tlH = 132, tlX = -16, tlY = 16,
+        
+        -- TopRight (Close Box)
+        trL = 0, trR = 131, trT = 148, trB = 267,
+        trW = 132, trH = 120, trX = 0, trY = 2,
+        
+        -- BottomLeft Corner
+        blL = 10, blR = 50, blT = 80, blB = 132,
+        blW = 40, blH = 52, blX = -16, blY = -8,
+        
+        -- BottomRight Corner
+        brL = 220, brR = 266, brT = 80, brB = 132,
+        brW = 46, brH = 52, brX = 0, brY = -8,
+        
+        -- TopEdge
+        teT = 123, teB = 133,
+        teH = 11, teY = -12, teLeftX = 0, teRightX = 0,
+        
+        -- BottomEdge
+        beT = 167, beB = 178,
+        beH = 12, beY = 0, beLeftX = 0, beRightX = 0,
+        
+        -- LeftEdge
+        leL = 11, leR = 18,
+        leW = 7, leX = 14, leTopY = 0, leBotY = 0,
+        
+        -- RightEdge
+        reL = 258, reR = 265,
+        reW = 7, reX = 0, reTopY = 0, reBotY = 0,
+        
+        -- Portrait
+        portraitX = -1, portraitY = 1, portraitSize = 60,
+        
+        -- Close Button
+        closeX = -13.5, closeY = -13.5,
+    },
+    ["HiRes"] = {
+        name        = "HiRes (2x Scaled)",
+        cornersFile = "Interface\\FrameGeneral\\UIFrameHiRes",
+        horizFile   = "Interface\\FrameGeneral\\UIFrameHiResHorizontal",
+        vertFile    = "Interface\\FrameGeneral\\UIFrameHiResVertical",
+        
+        -- TopLeft (Portrait Ring)
+        tlL = 0, tlR = 237, tlT = 0, tlB = 243,
+        tlW = 118.5, tlH = 121.5, tlX = -14, tlY = 18,
+        
+        -- TopRight (Close Box)
+        trL = 237, trR = 390, trT = 4, trB = 139,
+        trW = 76.5, trH = 67.5, trX = 4, trY = 18,
+        
+        -- BottomLeft Corner
+        blL = 446, blR = 492, blT = 0, blB = 50,
+        blW = 23, blH = 25, blX = -11, blY = -8,
+        
+        -- BottomRight Corner
+        brL = 394, brR = 442, blT = 0, brB = 50,
+        brW = 24, brH = 25, brX = 4, brY = -8,
+        
+        -- TopEdge
+        teT = 0, teB = 18,
+        teH = 9, teY = 3, teLeftX = -8, teRightX = 8,
+        
+        -- BottomEdge
+        beT = 71, beB = 89,
+        beH = 9, beY = 0, beLeftX = 0, beRightX = 0,
+        
+        -- LeftEdge
+        leL = 0, leR = 18,
+        leW = 9, leX = 12, leTopY = 0, leBotY = 0,
+        
+        -- RightEdge
+        reL = 19, reR = 37,
+        reW = 9, reX = 0, reTopY = 0, reBotY = 0,
+        
+        -- Portrait
+        portraitX = 1, portraitY = -7, portraitSize = 60,
+        
+        -- Close Button
+        closeX = -15, closeY = -15,
+    }
 }
 
-local nudgerState = {}
-for k, v in pairs(defaultState) do nudgerState[k] = v end
+local activeTheme = "Metal"
+local activeMode = "Geometry" -- "Geometry" or "TexCoords"
+local currentTarget = "TopLeft"
+
+-- Working state per theme
+local states = {}
+for themeKey, preset in pairs(THEME_PRESETS) do
+    states[themeKey] = {}
+    for k, v in pairs(preset) do
+        states[themeKey][k] = v
+    end
+end
+
+local function CloneTable(t)
+    local c = {}
+    for k, v in pairs(t) do c[k] = v end
+    return c
+end
 
 local function ApplyState(frame, s)
     if not frame then
         frame = _G["OnePanelFrame"]
     end
-    if not frame or not frame.HiResBorder then return end
-    local b = frame.HiResBorder
+    if not frame then return end
     
-    -- Top-Left Corner (Portrait Ring)
+    -- Ensure HiResBorder exists with active theme files
+    if not frame.HiResBorder then
+        if Utils and Utils.FrameHelper then
+            Utils.FrameHelper:ApplyHiResFrame(frame, { theme = activeTheme })
+        end
+    end
+    
+    local b = frame.HiResBorder
+    if not b then return end
+    
+    -- Check if textures need updating for theme
+    local preset = THEME_PRESETS[activeTheme]
+    if b.TopLeft and b.TopLeft:GetTexture() ~= preset.cornersFile then
+        b.TopLeft:SetTexture(preset.cornersFile)
+        b.TopRight:SetTexture(preset.cornersFile)
+        b.BottomLeft:SetTexture(preset.cornersFile)
+        b.BottomRight:SetTexture(preset.cornersFile)
+        b.TopEdge:SetTexture(preset.horizFile)
+        b.BottomEdge:SetTexture(preset.horizFile)
+        b.LeftEdge:SetTexture(preset.vertFile)
+        b.RightEdge:SetTexture(preset.vertFile)
+    end
+    
+    local cDim = (activeTheme == "HiRes") and 256 or 512
+    local cWDim = 512
+    local cHDim = (activeTheme == "HiRes") and 256 or 512
+    local hDim = (activeTheme == "HiRes") and 128 or 512
+    local vDim = (activeTheme == "HiRes") and 64 or 512
+    
+    -- 1. Top-Left Corner (Portrait Ring)
     if b.TopLeft then
+        b.TopLeft:SetTexCoord(s.tlL/cWDim, s.tlR/cWDim, s.tlT/cHDim, s.tlB/cHDim)
         b.TopLeft:ClearAllPoints()
         b.TopLeft:SetPoint("TOPLEFT", frame, "TOPLEFT", s.tlX, s.tlY)
         b.TopLeft:SetSize(s.tlW, s.tlH)
     end
     
-    -- Top-Right Corner (Close Box)
+    -- 2. Top-Right Corner (Close Box)
     if b.TopRight then
+        b.TopRight:SetTexCoord(s.trL/cWDim, s.trR/cWDim, s.trT/cHDim, s.trB/cHDim)
         b.TopRight:ClearAllPoints()
         b.TopRight:SetPoint("TOPRIGHT", frame, "TOPRIGHT", s.trX, s.trY)
         b.TopRight:SetSize(s.trW, s.trH)
     end
     
-    -- Bottom-Left Corner
+    -- 3. Bottom-Left Corner
     if b.BottomLeft then
+        b.BottomLeft:SetTexCoord(s.blL/cWDim, s.blR/cWDim, s.blT/cHDim, s.blB/cHDim)
         b.BottomLeft:ClearAllPoints()
         b.BottomLeft:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", s.blX, s.blY)
         b.BottomLeft:SetSize(s.blW, s.blH)
     end
     
-    -- Bottom-Right Corner
+    -- 4. Bottom-Right Corner
     if b.BottomRight then
+        b.BottomRight:SetTexCoord(s.brL/cWDim, s.brR/cWDim, s.brT/cHDim, s.brB/cHDim)
         b.BottomRight:ClearAllPoints()
         b.BottomRight:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", s.brX, s.brY)
         b.BottomRight:SetSize(s.brW, s.brH)
     end
     
-    -- Top Edge
+    -- 5. Top Edge
     if b.TopEdge and b.TopLeft and b.TopRight then
+        b.TopEdge:SetTexCoord(0, 1, s.teT/hDim, s.teB/hDim)
         b.TopEdge:ClearAllPoints()
-        b.TopEdge:SetPoint("TOPLEFT", b.TopLeft, "TOPRIGHT", -8, s.teY)
-        b.TopEdge:SetPoint("TOPRIGHT", b.TopRight, "TOPLEFT", 8, s.teY)
+        b.TopEdge:SetPoint("TOPLEFT", b.TopLeft, "TOPRIGHT", s.teLeftX, s.teY)
+        b.TopEdge:SetPoint("TOPRIGHT", b.TopRight, "TOPLEFT", s.teRightX, s.teY)
         b.TopEdge:SetHeight(s.teH)
     end
     
-    -- Bottom Edge
+    -- 6. Bottom Edge
     if b.BottomEdge and b.BottomLeft and b.BottomRight then
+        b.BottomEdge:SetTexCoord(0, 1, s.beT/hDim, s.beB/hDim)
         b.BottomEdge:ClearAllPoints()
-        b.BottomEdge:SetPoint("BOTTOMLEFT", b.BottomLeft, "BOTTOMRIGHT", 0, s.beY)
-        b.BottomEdge:SetPoint("BOTTOMRIGHT", b.BottomRight, "BOTTOMLEFT", 0, s.beY)
+        b.BottomEdge:SetPoint("BOTTOMLEFT", b.BottomLeft, "BOTTOMRIGHT", s.beLeftX, s.beY)
+        b.BottomEdge:SetPoint("BOTTOMRIGHT", b.BottomRight, "BOTTOMLEFT", s.beRightX, s.beY)
         b.BottomEdge:SetHeight(s.beH)
     end
     
-    -- Left Edge
+    -- 7. Left Edge
     if b.LeftEdge and b.TopLeft and b.BottomLeft then
+        b.LeftEdge:SetTexCoord(s.leL/vDim, s.leR/vDim, 0, 1)
         b.LeftEdge:ClearAllPoints()
-        b.LeftEdge:SetPoint("TOPLEFT", b.TopLeft, "BOTTOMLEFT", s.leX, 0)
-        b.LeftEdge:SetPoint("BOTTOMLEFT", b.BottomLeft, "TOPLEFT", 0, 0)
+        b.LeftEdge:SetPoint("TOPLEFT", b.TopLeft, "BOTTOMLEFT", s.leX, s.leTopY)
+        b.LeftEdge:SetPoint("BOTTOMLEFT", b.BottomLeft, "TOPLEFT", 0, s.leBotY)
         b.LeftEdge:SetWidth(s.leW)
     end
     
-    -- Right Edge
+    -- 8. Right Edge
     if b.RightEdge and b.TopRight and b.BottomRight then
+        b.RightEdge:SetTexCoord(s.reL/vDim, s.reR/vDim, 0, 1)
         b.RightEdge:ClearAllPoints()
-        b.RightEdge:SetPoint("TOPRIGHT", b.TopRight, "BOTTOMRIGHT", s.reX, 0)
-        b.RightEdge:SetPoint("BOTTOMRIGHT", b.BottomRight, "TOPRIGHT", 0, 0)
+        b.RightEdge:SetPoint("TOPRIGHT", b.TopRight, "BOTTOMRIGHT", s.reX, s.reTopY)
+        b.RightEdge:SetPoint("BOTTOMRIGHT", b.BottomRight, "TOPRIGHT", 0, s.reBotY)
         b.RightEdge:SetWidth(s.reW)
     end
     
-    -- Portrait Container
+    -- 9. Portrait Container
     if frame.PortraitContainer then
         frame.PortraitContainer:ClearAllPoints()
         frame.PortraitContainer:SetPoint("TOPLEFT", frame, "TOPLEFT", s.portraitX, s.portraitY)
@@ -146,95 +239,214 @@ local function ApplyState(frame, s)
         frame.portrait:Show()
     end
     
-    -- Close Button
+    -- 10. Close Button
     if frame.CloseButton and b.TopRight then
         frame.CloseButton:ClearAllPoints()
         frame.CloseButton:SetPoint("CENTER", b.TopRight, "TOPRIGHT", s.closeX, s.closeY)
     end
 end
 
-local function GetFormattedCode(s)
+local function GetFormattedCode(theme, s)
+    local cWDim = 512
+    local cHDim = (theme == "HiRes") and 256 or 512
+    local hDim = (theme == "HiRes") and 128 or 512
+    local vDim = (theme == "HiRes") and 64 or 512
+    
     return string.format(
-        "HiResOffsets = {\n" ..
-        "    tlX = %d, tlY = %d, tlW = %.1f, tlH = %.1f,\n" ..
-        "    trX = %d, trY = %d, trW = %.1f, trH = %.1f,\n" ..
-        "    blX = %d, blY = %d, blW = %d, blH = %d,\n" ..
-        "    brX = %d, brY = %d, brW = %d, brH = %d,\n" ..
-        "    teY = %d, teH = %d,\n" ..
-        "    beY = %d, beH = %d,\n" ..
-        "    leX = %d, leW = %d,\n" ..
-        "    reX = %d, reW = %d,\n" ..
-        "    portraitX = %d, portraitY = %d, portraitSize = %d,\n" ..
-        "    closeX = %d, closeY = %d,\n" ..
-        "}",
-        s.tlX, s.tlY, s.tlW, s.tlH,
-        s.trX, s.trY, s.trW, s.trH,
-        s.blX, s.blY, s.blW, s.blH,
-        s.brX, s.brY, s.brW, s.brH,
-        s.teY, s.teH,
-        s.beY, s.beH,
-        s.leX, s.leW,
-        s.reX, s.reW,
+        '["%s"] = {\n' ..
+        '    name        = "%s",\n' ..
+        '    cornersFile = "%s",\n' ..
+        '    horizFile   = "%s",\n' ..
+        '    vertFile    = "%s",\n\n' ..
+        '    -- TopLeft (Portrait Ring)\n' ..
+        '    tlCoords = { %d/%d, %d/%d, %d/%d, %d/%d },\n' ..
+        '    tlW = %.1f, tlH = %.1f, tlX = %d, tlY = %d,\n\n' ..
+        '    -- TopRight (Close Box)\n' ..
+        '    trCoords = { %d/%d, %d/%d, %d/%d, %d/%d },\n' ..
+        '    trW = %.1f, trH = %.1f, trX = %d, trY = %d,\n\n' ..
+        '    -- BottomLeft\n' ..
+        '    blCoords = { %d/%d, %d/%d, %d/%d, %d/%d },\n' ..
+        '    blW = %d, blH = %d, blX = %d, blY = %d,\n\n' ..
+        '    -- BottomRight\n' ..
+        '    brCoords = { %d/%d, %d/%d, %d/%d, %d/%d },\n' ..
+        '    brW = %d, brH = %d, brX = %d, brY = %d,\n\n' ..
+        '    -- TopEdge\n' ..
+        '    teCoords = { 0, 1, %d/%d, %d/%d },\n' ..
+        '    teH = %d, teY = %d, teLeftX = %d, teRightX = %d,\n\n' ..
+        '    -- BottomEdge\n' ..
+        '    beCoords = { 0, 1, %d/%d, %d/%d },\n' ..
+        '    beH = %d, beY = %d, beLeftX = %d, beRightX = %d,\n\n' ..
+        '    -- LeftEdge\n' ..
+        '    leCoords = { %d/%d, %d/%d, 0, 1 },\n' ..
+        '    leW = %d, leX = %d, leTopY = %d, leBotY = %d,\n\n' ..
+        '    -- RightEdge\n' ..
+        '    reCoords = { %d/%d, %d/%d, 0, 1 },\n' ..
+        '    reW = %d, reX = %d, reTopY = %d, reBotY = %d,\n\n' ..
+        '    -- Portrait Center & Size\n' ..
+        '    portraitX = %d, portraitY = %d, portraitSize = %d,\n\n' ..
+        '    -- Close Button Center\n' ..
+        '    closeX = %.1f, closeY = %.1f,\n' ..
+        '}',
+        theme, s.name, s.cornersFile, s.horizFile, s.vertFile,
+        s.tlL, cWDim, s.tlR, cWDim, s.tlT, cHDim, s.tlB, cHDim, s.tlW, s.tlH, s.tlX, s.tlY,
+        s.trL, cWDim, s.trR, cWDim, s.trT, cHDim, s.trB, cHDim, s.trW, s.trH, s.trX, s.trY,
+        s.blL, cWDim, s.blR, cWDim, s.blT, cHDim, s.blB, cHDim, s.blW, s.blH, s.blX, s.blY,
+        s.brL, cWDim, s.brR, cWDim, s.brT, cHDim, s.brB, cHDim, s.brW, s.brH, s.brX, s.brY,
+        s.teT, hDim, s.teB, hDim, s.teH, s.teY, s.teLeftX, s.teRightX,
+        s.beT, hDim, s.beB, hDim, s.beH, s.beY, s.beLeftX, s.beRightX,
+        s.leL, vDim, s.leR, vDim, s.leW, s.leX, s.leTopY, s.leBotY,
+        s.reL, vDim, s.reR, vDim, s.reW, s.reX, s.reTopY, s.reBotY,
         s.portraitX, s.portraitY, s.portraitSize,
         s.closeX, s.closeY
     )
 end
 
-local currentTarget = "TopLeft"
+-- TARGET DEFINITIONS FOR GEOMETRY MODE
+local GEOM_TARGETS = {
+    { id = "TopLeft",   label = "Portrait Ring", keys = { "tlX", "tlY", "tlW", "tlH" },             names = { "X Offset", "Y Offset", "Width", "Height" } },
+    { id = "TopRight",  label = "Close Box",     keys = { "trX", "trY", "trW", "trH" },             names = { "X Offset", "Y Offset", "Width", "Height" } },
+    { id = "BotLeft",   label = "Bottom-Left",   keys = { "blX", "blY", "blW", "blH" },             names = { "X Offset", "Y Offset", "Width", "Height" } },
+    { id = "BotRight",  label = "Bottom-Right",  keys = { "brX", "brY", "brW", "brH" },             names = { "X Offset", "Y Offset", "Width", "Height" } },
+    { id = "TopEdge",   label = "Top Edge",      keys = { "teY", "teH", "teLeftX", "teRightX" },   names = { "Y Offset", "Height", "Left X", "Right X" } },
+    { id = "BotEdge",   label = "Bottom Edge",   keys = { "beY", "beH", "beLeftX", "beRightX" },   names = { "Y Offset", "Height", "Left X", "Right X" } },
+    { id = "LeftEdge",  label = "Left Edge",     keys = { "leX", "leW", "leTopY", "leBotY" },     names = { "X Offset", "Width", "Top Y", "Bottom Y" } },
+    { id = "RightEdge", label = "Right Edge",    keys = { "reX", "reW", "reTopY", "reBotY" },     names = { "X Offset", "Width", "Top Y", "Bottom Y" } },
+    { id = "Portrait",  label = "Portrait",      keys = { "portraitX", "portraitY", "portraitSize" }, names = { "X Offset", "Y Offset", "Icon Size" } },
+    { id = "CloseBtn",  label = "Close Button",  keys = { "closeX", "closeY" },                      names = { "X Offset", "Y Offset" } },
+}
 
-local TARGETS = {
-    { id = "TopLeft",  label = "Portrait Ring", keys = { "tlX", "tlY", "tlW", "tlH" }, names = { "X Offset", "Y Offset", "Width", "Height" } },
-    { id = "TopRight", label = "Close Box",     keys = { "trX", "trY", "trW", "trH" }, names = { "X Offset", "Y Offset", "Width", "Height" } },
-    { id = "BotLeft",  label = "Bottom-Left",   keys = { "blX", "blY", "blW", "blH" }, names = { "X Offset", "Y Offset", "Width", "Height" } },
-    { id = "BotRight", label = "Bottom-Right",  keys = { "brX", "brY", "brW", "brH" }, names = { "X Offset", "Y Offset", "Width", "Height" } },
-    { id = "TopEdge",  label = "Top Edge",      keys = { "teY", "teH" },               names = { "Y Offset", "Height" } },
-    { id = "BotEdge",  label = "Bottom Edge",   keys = { "beY", "beH" },               names = { "Y Offset", "Height" } },
-    { id = "LeftEdge", label = "Left Edge",     keys = { "leX", "leW" },               names = { "X Offset", "Width" } },
-    { id = "RightEdge",label = "Right Edge",    keys = { "reX", "reW" },               names = { "X Offset", "Width" } },
-    { id = "Portrait", label = "Portrait Icon", keys = { "portraitX", "portraitY", "portraitSize" }, names = { "X Offset", "Y Offset", "Size" } },
-    { id = "CloseBtn", label = "Close Button",  keys = { "closeX", "closeY" },          names = { "X Offset", "Y Offset" } },
+-- TARGET DEFINITIONS FOR TEXCOORD (UV CROP) MODE
+local UV_TARGETS = {
+    { id = "TopLeft",   label = "TL UV",         keys = { "tlL", "tlR", "tlT", "tlB" }, names = { "Left (px)", "Right (px)", "Top (px)", "Bottom (px)" } },
+    { id = "TopRight",  label = "TR UV",         keys = { "trL", "trR", "trT", "trB" }, names = { "Left (px)", "Right (px)", "Top (px)", "Bottom (px)" } },
+    { id = "BotLeft",   label = "BL UV",         keys = { "blL", "blR", "blT", "blB" }, names = { "Left (px)", "Right (px)", "Top (px)", "Bottom (px)" } },
+    { id = "BotRight",  label = "BR UV",         keys = { "brL", "brR", "brT", "brB" }, names = { "Left (px)", "Right (px)", "Top (px)", "Bottom (px)" } },
+    { id = "TopEdge",   label = "Top Edge UV",   keys = { "teT", "teB" },               names = { "Top (px)", "Bottom (px)" } },
+    { id = "BotEdge",   label = "Bot Edge UV",   keys = { "beT", "beB" },               names = { "Top (px)", "Bottom (px)" } },
+    { id = "LeftEdge",  label = "Left Edge UV",  keys = { "leL", "leR" },               names = { "Left (px)", "Right (px)" } },
+    { id = "RightEdge", label = "Right Edge UV", keys = { "reL", "reR" },               names = { "Left (px)", "Right (px)" } },
 }
 
 local function CreateNudgerFrame()
     if _G["OnePanel_HiResNudgerFrame"] then return _G["OnePanel_HiResNudgerFrame"] end
     
     local nudger = CreateFrame("Frame", "OnePanel_HiResNudgerFrame", UIParent, "DialogBoxFrame")
-    nudger:SetSize(460, 520)
+    nudger:SetSize(490, 560)
     nudger:SetPoint("CENTER", UIParent, "CENTER", 340, 20)
     nudger:SetFrameStrata("TOOLTIP")
     nudger:SetMovable(true)
+    nudger:SetClampedToScreen(true)
     nudger:EnableMouse(true)
     nudger:RegisterForDrag("LeftButton")
     nudger:SetScript("OnDragStart", nudger.StartMoving)
     nudger:SetScript("OnDragStop", nudger.StopMovingOrSizing)
     
+    -- Title
     local title = nudger:CreateFontString(nil, "OVERLAY", "GameFontHighlightLarge")
     title:SetPoint("TOP", nudger, "TOP", 0, -12)
-    title:SetText("HiRes Frame Nudger (/opnudge)")
+    title:SetText("OnePanel Metal Border Nudger")
     
-    -- Target selector buttons (2 rows of 5 buttons)
+    -- Theme Switcher Button
+    local btnTheme = CreateFrame("Button", nil, nudger, "UIPanelButtonTemplate")
+    btnTheme:SetSize(220, 22)
+    btnTheme:SetPoint("TOPLEFT", nudger, "TOPLEFT", 18, -36)
+    
+    local function UpdateThemeButtonText()
+        btnTheme:SetText("Theme: " .. activeTheme .. " (Click to toggle)")
+    end
+    UpdateThemeButtonText()
+    
+    btnTheme:SetScript("OnClick", function()
+        if activeTheme == "Metal" then
+            activeTheme = "HiRes"
+        else
+            activeTheme = "Metal"
+        end
+        UpdateThemeButtonText()
+        if Utils and Utils.FrameHelper then
+            Utils.FrameHelper:ApplyHiResFrame(_G["OnePanelFrame"], { theme = activeTheme })
+        end
+        nudger:RefreshControls()
+    end)
+    
+    -- Mode Switcher (Geometry vs TexCoords)
+    local btnModeGeom = CreateFrame("Button", nil, nudger, "UIPanelButtonTemplate")
+    btnModeGeom:SetSize(110, 22)
+    btnModeGeom:SetPoint("TOPRIGHT", nudger, "TOPRIGHT", -134, -36)
+    btnModeGeom:SetText("Geometry")
+    
+    local btnModeUV = CreateFrame("Button", nil, nudger, "UIPanelButtonTemplate")
+    btnModeUV:SetSize(110, 22)
+    btnModeUV:SetPoint("LEFT", btnModeGeom, "RIGHT", 4, 0)
+    btnModeUV:SetText("TexCoords (UV)")
+    
+    btnModeGeom:SetScript("OnClick", function()
+        activeMode = "Geometry"
+        nudger:RefreshTargetButtons()
+        nudger:RefreshControls()
+    end)
+    btnModeUV:SetScript("OnClick", function()
+        activeMode = "TexCoords"
+        nudger:RefreshTargetButtons()
+        nudger:RefreshControls()
+    end)
+    
+    -- Target selector buttons container
+    local targetButtonContainer = CreateFrame("Frame", nil, nudger)
+    targetButtonContainer:SetPoint("TOPLEFT", nudger, "TOPLEFT", 18, -64)
+    targetButtonContainer:SetSize(454, 52)
+    
     local targetButtons = {}
-    local btnW, btnH = 82, 22
-    for idx, t in ipairs(TARGETS) do
-        local btn = CreateFrame("Button", nil, nudger, "UIPanelButtonTemplate")
-        btn:SetSize(btnW, btnH)
-        local row = math.floor((idx - 1) / 5)
-        local col = (idx - 1) % 5
-        btn:SetPoint("TOPLEFT", nudger, "TOPLEFT", 18 + col * (btnW + 4), -40 - row * (btnH + 4))
-        btn:SetText(t.label)
-        btn:SetScript("OnClick", function()
-            currentTarget = t.id
-            nudger:RefreshControls()
-        end)
-        targetButtons[t.id] = btn
+    
+    function nudger:RefreshTargetButtons()
+        -- Clear old buttons
+        for _, btn in pairs(targetButtons) do
+            btn:Hide()
+        end
+        wipe(targetButtons)
+        
+        local targets = (activeMode == "Geometry") and GEOM_TARGETS or UV_TARGETS
+        local btnW = 86
+        local btnH = 22
+        
+        -- Check if currentTarget is valid in this mode
+        local found = false
+        for _, t in ipairs(targets) do
+            if t.id == currentTarget then found = true; break end
+        end
+        if not found then
+            currentTarget = targets[1].id
+        end
+        
+        for idx, t in ipairs(targets) do
+            local btn = CreateFrame("Button", nil, targetButtonContainer, "UIPanelButtonTemplate")
+            btn:SetSize(btnW, btnH)
+            local row = math.floor((idx - 1) / 5)
+            local col = (idx - 1) % 5
+            btn:SetPoint("TOPLEFT", targetButtonContainer, "TOPLEFT", col * (btnW + 6), -row * (btnH + 4))
+            btn:SetText(t.label)
+            btn:SetScript("OnClick", function()
+                currentTarget = t.id
+                nudger:RefreshControls()
+            end)
+            targetButtons[t.id] = btn
+        end
+        
+        if activeMode == "Geometry" then
+            btnModeGeom:LockHighlight()
+            btnModeUV:UnlockHighlight()
+        else
+            btnModeGeom:UnlockHighlight()
+            btnModeUV:LockHighlight()
+        end
     end
     
-    -- Rows container
+    -- 4 Adjustment Rows
     local rows = {}
-    local rowY = -104
+    local rowY = -124
     for i = 1, 4 do
         local rowFrame = CreateFrame("Frame", nil, nudger)
-        rowFrame:SetSize(424, 26)
+        rowFrame:SetSize(454, 26)
         rowFrame:SetPoint("TOPLEFT", nudger, "TOPLEFT", 18, rowY)
         
         local lbl = rowFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
@@ -272,20 +484,20 @@ local function CreateNudgerFrame()
         rowFrame.ValText = valText
         
         rows[i] = rowFrame
-        rowY = rowY - 30
+        rowY = rowY - 28
     end
     
-    -- Code export scroll & edit box
+    -- Code Export EditBox
     local exportBox = CreateFrame("EditBox", "OnePanel_HiResExportBox", nudger)
     exportBox:SetMultiLine(true)
     exportBox:SetFontObject("GameFontHighlightSmall")
-    exportBox:SetWidth(410)
+    exportBox:SetWidth(434)
     exportBox:SetAutoFocus(false)
     exportBox:SetScript("OnEscapePressed", function(self) self:ClearFocus() end)
     
     local exportScroll = CreateFrame("ScrollFrame", nil, nudger, "UIPanelScrollFrameTemplate")
-    exportScroll:SetSize(410, 150)
-    exportScroll:SetPoint("TOPLEFT", nudger, "TOPLEFT", 18, -235)
+    exportScroll:SetSize(434, 180)
+    exportScroll:SetPoint("TOPLEFT", nudger, "TOPLEFT", 18, -248)
     exportScroll:SetScrollChild(exportBox)
     
     -- Action buttons at bottom
@@ -299,11 +511,12 @@ local function CreateNudgerFrame()
     end)
     
     local btnReset = CreateFrame("Button", nil, nudger, "UIPanelButtonTemplate")
-    btnReset:SetSize(110, 24)
-    btnReset:SetPoint("LEFT", btnCopy, "RIGHT", 6, 0)
+    btnReset:SetSize(120, 24)
+    btnReset:SetPoint("LEFT", btnCopy, "RIGHT", 8, 0)
     btnReset:SetText("Reset Defaults")
     btnReset:SetScript("OnClick", function()
-        for k, v in pairs(defaultState) do nudgerState[k] = v end
+        local preset = THEME_PRESETS[activeTheme]
+        states[activeTheme] = CloneTable(preset)
         nudger:RefreshControls()
     end)
     
@@ -314,6 +527,9 @@ local function CreateNudgerFrame()
     btnClose:SetScript("OnClick", function() nudger:Hide() end)
     
     function nudger:RefreshControls()
+        local s = states[activeTheme]
+        local targets = (activeMode == "Geometry") and GEOM_TARGETS or UV_TARGETS
+        
         -- Highlight active target button
         for tid, btn in pairs(targetButtons) do
             if tid == currentTarget then
@@ -325,7 +541,7 @@ local function CreateNudgerFrame()
         
         -- Find target definition
         local targetDef = nil
-        for _, t in ipairs(TARGETS) do
+        for _, t in ipairs(targets) do
             if t.id == currentTarget then targetDef = t; break end
         end
         if not targetDef then return end
@@ -337,13 +553,13 @@ local function CreateNudgerFrame()
             if key then
                 row:Show()
                 row.Label:SetText(name)
-                row.ValText:SetText(string.format("%.1f", nudgerState[key]))
+                row.ValText:SetText(string.format("%.1f", s[key] or 0))
                 
                 local function onStep(delta)
-                    nudgerState[key] = nudgerState[key] + delta
-                    row.ValText:SetText(string.format("%.1f", nudgerState[key]))
-                    ApplyState(_G["OnePanelFrame"], nudgerState)
-                    exportBox:SetText(GetFormattedCode(nudgerState))
+                    s[key] = (s[key] or 0) + delta
+                    row.ValText:SetText(string.format("%.1f", s[key]))
+                    ApplyState(_G["OnePanelFrame"], s)
+                    exportBox:SetText(GetFormattedCode(activeTheme, s))
                 end
                 
                 row.BtnM10:SetScript("OnClick", function() onStep(-10) end)
@@ -355,14 +571,19 @@ local function CreateNudgerFrame()
             end
         end
         
-        ApplyState(_G["OnePanelFrame"], nudgerState)
-        exportBox:SetText(GetFormattedCode(nudgerState))
+        ApplyState(_G["OnePanelFrame"], s)
+        exportBox:SetText(GetFormattedCode(activeTheme, s))
     end
     
     nudger:SetScript("OnShow", function()
+        if _G["OnePanelFrame"] and not _G["OnePanelFrame"]:IsShown() then
+            _G["OnePanelFrame"]:Show()
+        end
+        nudger:RefreshTargetButtons()
         nudger:RefreshControls()
     end)
     
+    nudger:RefreshTargetButtons()
     nudger:RefreshControls()
     return nudger
 end
@@ -371,6 +592,14 @@ SLASH_OPNUDGE1 = "/opnudge"
 SLASH_OPNUDGE2 = "/opalign"
 SLASH_OPNUDGE3 = "/opborder"
 SlashCmdList["OPNUDGE"] = function()
+    -- Ensure OnePanel master frame is created
+    if OnePanel and OnePanel.CreateMasterFrame and not _G["OnePanelFrame"] then
+        OnePanel:CreateMasterFrame()
+    end
+    if _G["OnePanelFrame"] and not _G["OnePanelFrame"]:IsShown() then
+        _G["OnePanelFrame"]:Show()
+    end
+    
     local f = CreateNudgerFrame()
     if f:IsShown() then
         f:Hide()
