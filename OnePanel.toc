@@ -9,3 +9,4 @@
 OnePanel.lua
 TabManager.lua
 MicroButtonHooks.lua
+HiResNudger.lua
