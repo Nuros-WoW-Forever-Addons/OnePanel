@@ -87,13 +87,13 @@ local function CreateSideTabButton(index, pluginId)
     highlight:SetAllPoints(tab)
     tab.Highlight = highlight
     
-    -- Active / Selected Overlay: Outer rim glow matching tab contour
+    -- Active / Selected Overlay (common-sidetab-selected atlas)
     local activeGlow = tab:CreateTexture(buttonName .. "ActiveGlow", "OVERLAY")
-    activeGlow:SetTexture("Interface\\SpellBook\\SpellBook-SkillLineTab-Glow")
+    ApplyTabAtlasOrTexture(activeGlow, "common-sidetab-selected", "Interface\\Buttons\\CheckButtonHilight")
     if activeGlow.SetDesaturated then
         activeGlow:SetDesaturated(true)
     end
-    activeGlow:SetVertexColor(0.9, 0.9, 1.0, 1.0)
+    activeGlow:SetVertexColor(0.95, 0.95, 1.0, 1.0)
     activeGlow:SetBlendMode("ADD")
     activeGlow:SetAllPoints(tab)
     activeGlow:Hide()
@@ -244,13 +244,14 @@ function TabManager:RefreshTabs()
                     local model = CreateFrame("PlayerModel", btn:GetName() .. "3DPortrait", btn)
                     model:SetSize(30, 30)
                     model:SetPoint("CENTER", btn, "CENTER", 0, 0)
-                    model:SetFrameLevel(btn:GetFrameLevel() + 2)
+                    model:SetFrameLevel(btn:GetFrameLevel() + 5)
                     model:SetUnit("player")
                     if model.SetPortraitZoom then model:SetPortraitZoom(1) end
                     btn.PlayerModel = model
                 else
                     btn.PlayerModel:SetSize(30, 30)
                     btn.PlayerModel:SetPoint("CENTER", btn, "CENTER", 0, 0)
+                    btn.PlayerModel:SetFrameLevel(btn:GetFrameLevel() + 5)
                     btn.PlayerModel:SetUnit("player")
                     if btn.PlayerModel.SetPortraitZoom then btn.PlayerModel:SetPortraitZoom(1) end
                     btn.PlayerModel:Show()
