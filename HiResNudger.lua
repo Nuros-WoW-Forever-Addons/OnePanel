@@ -38,7 +38,7 @@ local THEME_PRESETS = {
         
         -- Header Divider (Bottom of double top header)
         hdT = 149, hdB = 157,
-        hdH = 9, hdY = -32, hdLeftX = 0, hdRightX = 0,
+        hdH = 8, hdY = -32, hdLeftX = 0, hdRightX = 0,
         
         -- Vertical Divider (between main panel and side panel)
         vdL = 258, vdR = 265,
