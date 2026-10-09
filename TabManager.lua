@@ -72,9 +72,13 @@ local function CreateSideTabButton(index, pluginId)
     highlight:SetAllPoints(tab)
     tab.Highlight = highlight
     
-    -- Active / Selected Overlay (common-sidetab-selected atlas)
+    -- Active / Selected Overlay (Silver Solution 1: Silver/Chrome Rim Highlight)
     local activeGlow = tab:CreateTexture(buttonName .. "ActiveGlow", "OVERLAY")
     ApplyTabAtlasOrTexture(activeGlow, "common-sidetab-selected", "Interface\\Buttons\\CheckButtonHilight")
+    if activeGlow.SetDesaturated then
+        activeGlow:SetDesaturated(true)
+    end
+    activeGlow:SetVertexColor(0.9, 0.9, 1.0, 1.0)
     activeGlow:SetBlendMode("ADD")
     activeGlow:SetAllPoints(tab)
     activeGlow:Hide()
