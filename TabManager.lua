@@ -52,11 +52,26 @@ local function CreateSideTabButton(index, pluginId)
     tab:SetID(index)
     tab.pluginId = pluginId
     
-    -- Background Texture (common-sidetab atlas)
-    local bg = tab:CreateTexture(buttonName .. "Background", "BACKGROUND")
+    -- Background Texture (common-sidetab atlas or SpellBook-SkillLineTab)
+    local bg = tab:CreateTexture(buttonName .. "Background", "BACKGROUND", nil, -1)
     ApplyTabAtlasOrTexture(bg, "common-sidetab", "Interface\\SpellBook\\SpellBook-SkillLineTab")
+    if bg.SetDesaturated then
+        bg:SetDesaturated(true)
+    end
+    bg:SetVertexColor(0.85, 0.85, 0.9, 1.0)
     bg:SetAllPoints(tab)
     tab.Background = bg
+    
+    -- Silver Sheen Texture (Lightens base texture into metallic steel/silver via ADD blend mode)
+    local silverShine = tab:CreateTexture(buttonName .. "SilverShine", "BACKGROUND", nil, 0)
+    ApplyTabAtlasOrTexture(silverShine, "common-sidetab", "Interface\\SpellBook\\SpellBook-SkillLineTab")
+    if silverShine.SetDesaturated then
+        silverShine:SetDesaturated(true)
+    end
+    silverShine:SetBlendMode("ADD")
+    silverShine:SetVertexColor(0.6, 0.6, 0.7, 0.8)
+    silverShine:SetAllPoints(tab)
+    tab.SilverShine = silverShine
     
     -- Main Icon Texture
     local icon = tab:CreateTexture(buttonName .. "Icon", "ARTWORK")
@@ -72,9 +87,9 @@ local function CreateSideTabButton(index, pluginId)
     highlight:SetAllPoints(tab)
     tab.Highlight = highlight
     
-    -- Active / Selected Overlay (Silver Solution 1: Silver/Chrome Rim Highlight)
+    -- Active / Selected Overlay: Outer rim glow matching tab contour
     local activeGlow = tab:CreateTexture(buttonName .. "ActiveGlow", "OVERLAY")
-    ApplyTabAtlasOrTexture(activeGlow, "common-sidetab-selected", "Interface\\Buttons\\CheckButtonHilight")
+    activeGlow:SetTexture("Interface\\SpellBook\\SpellBook-SkillLineTab-Glow")
     if activeGlow.SetDesaturated then
         activeGlow:SetDesaturated(true)
     end
@@ -284,9 +299,13 @@ function TabManager:UpdateTabHighlights()
             
             if isSelected then
                 if btn.Icon then btn.Icon:SetVertexColor(1.0, 1.0, 1.0, 1.0) end
+                if btn.Background then btn.Background:SetVertexColor(1.0, 1.0, 1.0, 1.0) end
+                if btn.SilverShine then btn.SilverShine:SetVertexColor(0.85, 0.85, 0.95, 0.9); btn.SilverShine:Show() end
                 if btn.ActiveGlow then btn.ActiveGlow:Show() end
             else
                 if btn.Icon then btn.Icon:SetVertexColor(0.7, 0.7, 0.7, 1.0) end
+                if btn.Background then btn.Background:SetVertexColor(0.7, 0.7, 0.75, 1.0) end
+                if btn.SilverShine then btn.SilverShine:SetVertexColor(0.35, 0.35, 0.4, 0.5) end
                 if btn.ActiveGlow then btn.ActiveGlow:Hide() end
             end
         end
