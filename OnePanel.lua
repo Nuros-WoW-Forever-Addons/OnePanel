@@ -115,13 +115,41 @@ end
 -- Host Canvas Frame Initialization
 -------------------------------------------------------------------------------
 
+local function SaveMasterFramePosition(frame)
+    if not frame then return end
+    local point, relativeTo, relativePoint, xOfs, yOfs = frame:GetPoint()
+    if point and xOfs and yOfs then
+        _G.OnePanelDB = _G.OnePanelDB or {}
+        _G.OnePanelDB.position = {
+            point = point,
+            relativePoint = relativePoint or point,
+            x = math.floor(xOfs + 0.5),
+            y = math.floor(yOfs + 0.5),
+        }
+    end
+end
+
+local function RestoreMasterFramePosition(frame)
+    if not frame then return end
+    if _G.OnePanelDB and _G.OnePanelDB.position then
+        local pos = _G.OnePanelDB.position
+        if pos.point and pos.x and pos.y then
+            frame:ClearAllPoints()
+            frame:SetPoint(pos.point, UIParent, pos.relativePoint or pos.point, pos.x, pos.y)
+            return
+        end
+    end
+    frame:ClearAllPoints()
+    frame:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
+end
+
 local function CreateMasterFrame()
     if OnePanel.frame then return OnePanel.frame end
     
     -- Main Window Container using native Blizzard PortraitFrameTemplate
     local frame = CreateFrame("Frame", "OnePanelFrame", UIParent, "PortraitFrameTemplate")
     frame:SetSize(580, 475)
-    frame:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
+    RestoreMasterFramePosition(frame)
     frame:SetFrameStrata("HIGH")
     frame:SetToplevel(true)
     frame:SetClampedToScreen(true)
@@ -135,6 +163,7 @@ local function CreateMasterFrame()
     end)
     frame:SetScript("OnDragStop", function(self)
         self:StopMovingOrSizing()
+        SaveMasterFramePosition(self)
     end)
     frame:Hide()
     
@@ -250,9 +279,13 @@ eventFrame:RegisterEvent("PLAYER_LOGIN")
 eventFrame:SetScript("OnEvent", function(self, event, arg1)
     if event == "ADDON_LOADED" and arg1 == addonName then
         _G.OnePanelDB = _G.OnePanelDB or {}
+        if OnePanel.frame then
+            RestoreMasterFramePosition(OnePanel.frame)
+        end
         self:UnregisterEvent("ADDON_LOADED")
     elseif event == "PLAYER_LOGIN" then
-        CreateMasterFrame()
+        local frame = CreateMasterFrame()
+        RestoreMasterFramePosition(frame)
         
         if Utils and Utils.Logger then
             Utils.Logger:Log("OnePanel", "INFO", "OnePanel Host Shell v" .. OnePanel.version .. " loaded.")

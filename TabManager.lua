@@ -80,7 +80,7 @@ local function CreateSideTabButton(index, pluginId)
     -- Main Icon Texture
     local icon = tab:CreateTexture(buttonName .. "Icon", "ARTWORK")
     icon:SetSize(ICON_SIZE, ICON_SIZE)
-    icon:SetPoint("CENTER", tab, "CENTER", 0, 0)
+    icon:SetPoint("CENTER", tab, "CENTER", -1, 0)
     icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
     tab.Icon = icon
     
@@ -247,14 +247,14 @@ function TabManager:RefreshTabs()
                 if not btn.PlayerModel then
                     local model = CreateFrame("PlayerModel", btn:GetName() .. "3DPortrait", btn)
                     model:SetSize(ICON_SIZE, ICON_SIZE)
-                    model:SetPoint("CENTER", btn, "CENTER", 0, 0)
+                    model:SetPoint("CENTER", btn, "CENTER", -1, 0)
                     model:SetFrameLevel(btn:GetFrameLevel() + 5)
                     model:SetUnit("player")
                     if model.SetPortraitZoom then model:SetPortraitZoom(1) end
                     btn.PlayerModel = model
                 else
                     btn.PlayerModel:SetSize(ICON_SIZE, ICON_SIZE)
-                    btn.PlayerModel:SetPoint("CENTER", btn, "CENTER", 0, 0)
+                    btn.PlayerModel:SetPoint("CENTER", btn, "CENTER", -1, 0)
                     btn.PlayerModel:SetFrameLevel(btn:GetFrameLevel() + 5)
                     btn.PlayerModel:SetUnit("player")
                     if btn.PlayerModel.SetPortraitZoom then btn.PlayerModel:SetPortraitZoom(1) end
@@ -265,7 +265,7 @@ function TabManager:RefreshTabs()
                 if btn.PlayerModel then btn.PlayerModel:Hide() end
                 btn.Icon:Show()
                 btn.Icon:SetSize(ICON_SIZE, ICON_SIZE)
-                btn.Icon:SetPoint("CENTER", btn, "CENTER", 0, 0)
+                btn.Icon:SetPoint("CENTER", btn, "CENTER", -1, 0)
                 if plugin.icon then
                     btn.Icon:SetTexture(plugin.icon)
                 end
@@ -297,7 +297,7 @@ function TabManager:UpdateTabHighlights()
             
             btn:ClearAllPoints()
             local xOffset = isSelected and 1 or -2
-            local yOffset = -((i - 1) * TAB_HEIGHT)
+            local yOffset = -((i - 1) * (TAB_HEIGHT - 1))
             
             btn:SetPoint("TOPLEFT", modeTabsFrame, "TOPLEFT", xOffset, yOffset)
             
