@@ -172,6 +172,31 @@ local function CreateMasterFrame()
         Utils.FrameHelper:RegisterEscClose("OnePanelFrame")
     end
     
+    -- Sound effects on Open / Close (Native Character Info sounds)
+    local function PlayOpenSound()
+        local sound = (SOUNDKIT and SOUNDKIT.IG_CHARACTER_INFO_OPEN) or 839
+        local ok = pcall(PlaySound, sound)
+        if not ok then
+            pcall(PlaySound, "igCharacterInfoOpen")
+        end
+    end
+
+    local function PlayCloseSound()
+        local sound = (SOUNDKIT and SOUNDKIT.IG_CHARACTER_INFO_CLOSE) or 840
+        local ok = pcall(PlaySound, sound)
+        if not ok then
+            pcall(PlaySound, "igCharacterInfoClose")
+        end
+    end
+
+    if frame.HookScript then
+        frame:HookScript("OnShow", PlayOpenSound)
+        frame:HookScript("OnHide", PlayCloseSound)
+    else
+        frame:SetScript("OnShow", PlayOpenSound)
+        frame:SetScript("OnHide", PlayCloseSound)
+    end
+    
     -- Store frame reference
     OnePanel.frame = frame
     

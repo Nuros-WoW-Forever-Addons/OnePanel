@@ -123,6 +123,11 @@ local function CreateSideTabButton(index, pluginId)
     end)
     
     tab:SetScript("OnClick", function(self)
+        local sound = (SOUNDKIT and SOUNDKIT.IG_CHARACTER_INFO_TAB) or 841
+        local ok = pcall(PlaySound, sound)
+        if not ok then
+            pcall(PlaySound, "igCharacterInfoTab")
+        end
         TabManager:SelectTab(self.pluginId)
     end)
     
