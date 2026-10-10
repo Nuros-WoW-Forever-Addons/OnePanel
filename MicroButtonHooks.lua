@@ -11,8 +11,9 @@ OnePanel.MicroButtonHooks = MicroButtonHooks
 local Utils = _G.OnePanelUtils
 
 -- Map of native Blizzard toggle function names to OnePanel plugin IDs
+-- NOTE: ToggleCharacter is intentionally omitted so players can open native
+-- CharacterFrame and ReputationFrame to compare with OnePanel.
 local ToggleMapping = {
-    ["ToggleCharacter"]   = "Character",
     ["ToggleProfessions"] = "Professions",
     ["ToggleSpellBook"]   = "SpellBook",
     ["ToggleTalentFrame"] = "Talents",
@@ -26,33 +27,20 @@ local ToggleMapping = {
 function MicroButtonHooks:Initialize()
     for globalFuncName, pluginId in pairs(ToggleMapping) do
         if type(_G[globalFuncName]) == "function" then
-            hooksecurefunc(globalFuncName, function(subFrame, ...)
-                local targetPluginId = pluginId
-                if globalFuncName == "ToggleCharacter" then
-                    if subFrame == "ReputationFrame" and OnePanel.plugins and OnePanel.plugins["Reputation"] then
-                        targetPluginId = "Reputation"
-                    elseif subFrame == "TokenFrame" and OnePanel.plugins and OnePanel.plugins["Tokens"] then
-                        targetPluginId = "Tokens"
-                    end
-                end
-                
-                local plugin = OnePanel.plugins and OnePanel.plugins[targetPluginId]
+            hooksecurefunc(globalFuncName, function(...)
+                local plugin = OnePanel.plugins and OnePanel.plugins[pluginId]
                 local globalEnable = (OnePanelDB and OnePanelDB.interceptNativeKeys)
                 local pluginEnable = (plugin and plugin.interceptNativeToggle)
                 
                 -- Only react if explicitly requested by active plugin or global setting
                 if plugin and (globalEnable or pluginEnable) then
-                    if OnePanel.frame and OnePanel.frame:IsShown() and OnePanel.activePluginId == targetPluginId then
+                    if OnePanel.frame and OnePanel.frame:IsShown() and OnePanel.activePluginId == pluginId then
                         OnePanel:Hide()
                     else
                         OnePanel:Show()
                         if OnePanel.TabManager then
-                            OnePanel.TabManager:SelectTab(targetPluginId)
+                            OnePanel.TabManager:SelectTab(pluginId)
                         end
-                    end
-                    
-                    if CharacterFrame and CharacterFrame:IsShown() then
-                        CharacterFrame:Hide()
                     end
                 end
             end)
@@ -61,15 +49,6 @@ function MicroButtonHooks:Initialize()
                 Utils.Logger:Log("MicroButtonHooks", "DEBUG", "Securely hooked toggle routine: " .. globalFuncName .. " -> " .. pluginId)
             end
         end
-    end
-    
-    -- Suppress native CharacterFrame if OnePanel is active
-    if CharacterFrame then
-        CharacterFrame:HookScript("OnShow", function(self)
-            if OnePanel and OnePanel.frame and OnePanel.frame:IsShown() then
-                self:Hide()
-            end
-        end)
     end
 end
 
