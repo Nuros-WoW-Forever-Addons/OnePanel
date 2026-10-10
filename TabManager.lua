@@ -34,7 +34,7 @@ end
 
 local TAB_WIDTH = 50
 local TAB_HEIGHT = 48
-local ICON_SIZE = 38
+local ICON_SIZE = 36
 
 --- Programmatically build a vertical right-side tab button
 -- @param index number: Tab index position
