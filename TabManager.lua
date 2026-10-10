@@ -34,7 +34,9 @@ end
 
 local TAB_WIDTH = 50
 local TAB_HEIGHT = 48
-local ICON_SIZE = 36
+local ICON_SIZE = 35
+local PORTRAIT_SIZE = 33
+local PORTRAIT_Y_OFFSET = 2
 
 --- Programmatically build a vertical right-side tab button
 -- @param index number: Tab index position
@@ -246,15 +248,15 @@ function TabManager:RefreshTabs()
             if plugin.use3DPortrait or pluginId == "Character" then
                 if not btn.PlayerModel then
                     local model = CreateFrame("PlayerModel", btn:GetName() .. "3DPortrait", btn)
-                    model:SetSize(ICON_SIZE, ICON_SIZE)
-                    model:SetPoint("CENTER", btn, "CENTER", -1, 0)
+                    model:SetSize(PORTRAIT_SIZE, PORTRAIT_SIZE)
+                    model:SetPoint("CENTER", btn, "CENTER", -1, PORTRAIT_Y_OFFSET)
                     model:SetFrameLevel(btn:GetFrameLevel() + 5)
                     model:SetUnit("player")
                     if model.SetPortraitZoom then model:SetPortraitZoom(1) end
                     btn.PlayerModel = model
                 else
-                    btn.PlayerModel:SetSize(ICON_SIZE, ICON_SIZE)
-                    btn.PlayerModel:SetPoint("CENTER", btn, "CENTER", -1, 0)
+                    btn.PlayerModel:SetSize(PORTRAIT_SIZE, PORTRAIT_SIZE)
+                    btn.PlayerModel:SetPoint("CENTER", btn, "CENTER", -1, PORTRAIT_Y_OFFSET)
                     btn.PlayerModel:SetFrameLevel(btn:GetFrameLevel() + 5)
                     btn.PlayerModel:SetUnit("player")
                     if btn.PlayerModel.SetPortraitZoom then btn.PlayerModel:SetPortraitZoom(1) end
