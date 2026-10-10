@@ -32,7 +32,11 @@ end
 -- Right-Side Vertical Tab Button Construction
 -------------------------------------------------------------------------------
 
---- Programmatically build a vertical right-side tab button (Matches CharacterFrameModeTab 55x55)
+local TAB_WIDTH = 50
+local TAB_HEIGHT = 48
+local ICON_SIZE = 38
+
+--- Programmatically build a vertical right-side tab button
 -- @param index number: Tab index position
 -- @param pluginId string: Unique plugin identifier
 -- @return Button: Created side tab button
@@ -48,7 +52,7 @@ local function CreateSideTabButton(index, pluginId)
     
     local buttonName = "OnePanelSideTab" .. index
     local tab = CreateFrame("Button", buttonName, modeTabsFrame)
-    tab:SetSize(55, 55)
+    tab:SetSize(TAB_WIDTH, TAB_HEIGHT)
     tab:SetID(index)
     tab.pluginId = pluginId
     
@@ -75,7 +79,7 @@ local function CreateSideTabButton(index, pluginId)
     
     -- Main Icon Texture
     local icon = tab:CreateTexture(buttonName .. "Icon", "ARTWORK")
-    icon:SetSize(30, 30)
+    icon:SetSize(ICON_SIZE, ICON_SIZE)
     icon:SetPoint("CENTER", tab, "CENTER", 0, 0)
     icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
     tab.Icon = icon
@@ -242,14 +246,14 @@ function TabManager:RefreshTabs()
             if plugin.use3DPortrait or pluginId == "Character" then
                 if not btn.PlayerModel then
                     local model = CreateFrame("PlayerModel", btn:GetName() .. "3DPortrait", btn)
-                    model:SetSize(30, 30)
+                    model:SetSize(ICON_SIZE, ICON_SIZE)
                     model:SetPoint("CENTER", btn, "CENTER", 0, 0)
                     model:SetFrameLevel(btn:GetFrameLevel() + 5)
                     model:SetUnit("player")
                     if model.SetPortraitZoom then model:SetPortraitZoom(1) end
                     btn.PlayerModel = model
                 else
-                    btn.PlayerModel:SetSize(30, 30)
+                    btn.PlayerModel:SetSize(ICON_SIZE, ICON_SIZE)
                     btn.PlayerModel:SetPoint("CENTER", btn, "CENTER", 0, 0)
                     btn.PlayerModel:SetFrameLevel(btn:GetFrameLevel() + 5)
                     btn.PlayerModel:SetUnit("player")
@@ -260,6 +264,8 @@ function TabManager:RefreshTabs()
             else
                 if btn.PlayerModel then btn.PlayerModel:Hide() end
                 btn.Icon:Show()
+                btn.Icon:SetSize(ICON_SIZE, ICON_SIZE)
+                btn.Icon:SetPoint("CENTER", btn, "CENTER", 0, 0)
                 if plugin.icon then
                     btn.Icon:SetTexture(plugin.icon)
                 end
@@ -290,13 +296,10 @@ function TabManager:UpdateTabHighlights()
             local isSelected = (btn.pluginId == activeId)
             
             btn:ClearAllPoints()
-            local xOffset = isSelected and 0 or -2
+            local xOffset = isSelected and 1 or -2
+            local yOffset = -((i - 1) * TAB_HEIGHT)
             
-            if i == 1 then
-                btn:SetPoint("TOPLEFT", modeTabsFrame, "TOPLEFT", xOffset, 0)
-            else
-                btn:SetPoint("TOPLEFT", self.tabButtons[i - 1], "BOTTOMLEFT", 0, -6)
-            end
+            btn:SetPoint("TOPLEFT", modeTabsFrame, "TOPLEFT", xOffset, yOffset)
             
             if isSelected then
                 if btn.Icon then btn.Icon:SetVertexColor(1.0, 1.0, 1.0, 1.0) end
